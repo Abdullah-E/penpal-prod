@@ -16,6 +16,8 @@
   "dependencies": {
     "@fastify/cors": "^9.0.1",
     "dotenv": "^16.4.5",
-    "fastify": "^4.28.1"
+    "fastify": "^4.28.1",
+    "firebase": "^10.12.3",
+    "mongoose": "^8.4.4"
   }
 }
