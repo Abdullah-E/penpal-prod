@@ -3,6 +3,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} fr
 const auth = getAuth(firebaseApp);
 
 import User from '../models/user.js'
+import { cat } from "@xenova/transformers";
 
 // import {BASE_URL} from '../server.js'
 
@@ -16,6 +17,8 @@ fastify.post(BASE_URL+'/user', async (request, reply) => {
             fullname,
             firebase_uid: fb_user.user.uid
         })
+
+        delete user.password
         reply.status(201).send({
             data:user,
             event_code:1,
@@ -23,11 +26,24 @@ fastify.post(BASE_URL+'/user', async (request, reply) => {
             status_code:201
         })
     } catch (error) {
-        reply.status(500).send({
-            data:null,
-            event_code:0,
-            message:error._message,
-            status_code:500
-        })
+        console.error(error)
+        
+        if(error.name == 'FirebaseError'){
+            
+            reply.status(500).send({
+                data:null,
+                event_code:0,
+                message:error.code,
+                status_code:500
+            })
+        }else{
+            
+            reply.status(500).send({
+                data:null,
+                event_code:0,
+                message:error._message || error.message || error.name, 
+                status_code:500
+            })
+        }
     }
 })
