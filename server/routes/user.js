@@ -3,7 +3,6 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} fr
 const auth = getAuth(firebaseApp);
 
 import User from '../models/user.js'
-import { cat } from "@xenova/transformers";
 
 // import {BASE_URL} from '../server.js'
 
