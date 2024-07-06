@@ -21,4 +21,6 @@ const firebaseConfig = {
     measurementID: process.env.FIREBASE_MEASUREMENTID
 };
 
+console.log("fb conf:",firebaseConfig)
+
 export const firebaseApp = initializeApp(firebaseConfig)
