@@ -1,5 +1,7 @@
 server/node_modules
 server/.env
 server/.env.test
+
 tests/venv
 tests/__pycache__
+tests/.pytest_cache
