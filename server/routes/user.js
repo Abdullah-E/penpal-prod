@@ -14,12 +14,12 @@ import User from '../models/user.js'
 // import {BASE_URL} from '../server.js'
 
 fastify.post(BASE_URL+'/user', async (request, reply) => {
-    console.log(request.query)
+    // console.log(request.query)
     const role = request.query.role || 'user'
     const { email, password, fullname } = request.body;
     try {
         const hashPass = await bcrypt.hash(password, 10)
-        console.log(hashPass)
+        // console.log(hashPass)
         const fb_user = await createUserWithEmailAndPassword(auth, email, password)
         await admin.auth().setCustomUserClaims(fb_user.user.uid, {role})
 
@@ -27,7 +27,8 @@ fastify.post(BASE_URL+'/user', async (request, reply) => {
             email,
             password: hashPass,
             fullname,
-            firebase_uid: fb_user.user.uid
+            firebase_uid: fb_user.user.uid,
+            role
         })
         const userObj = user.toObject()
         delete userObj.password
@@ -41,7 +42,7 @@ fastify.post(BASE_URL+'/user', async (request, reply) => {
         console.error(error)
         
         if(error.name == 'FirebaseError'){
-            
+
             reply.status(500).send({
                 data:null,
                 event_code:0,
@@ -58,4 +59,11 @@ fastify.post(BASE_URL+'/user', async (request, reply) => {
             })
         }
     }
+})
+
+fastify.get(BASE_URL+'/user/test', async (request, reply) => {
+    const f_id = request.query.f_id
+    const fb_user = await admin.auth().getUser(f_id)
+    console.log(fb_user)
+    reply.send(fb_user)
 })
