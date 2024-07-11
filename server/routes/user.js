@@ -1,20 +1,13 @@
-import { fastify, firebaseApp, BASE_URL } from "./init.js";
+import { fastify, BASE_URL } from "./init.js";
+import { firebaseApp, admin } from "../config/firebase.js";
 import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import admin from "firebase-admin";
 import bcrypt from "bcrypt";
-const serviceAcc = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAcc),
-});
 
 const auth = getAuth(firebaseApp);
-
-
 
 import User from '../models/user.js'
 
@@ -34,6 +27,7 @@ async function verifyToken(request, reply) {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
         request.user = decodedToken;
     } catch (error) {
+        console.error(error);
         console.log(request.headers.authorization)
         reply.code(401).send({ error: "Unauthorized" });
     }
