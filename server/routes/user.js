@@ -1,13 +1,8 @@
 import { fastify, firebaseApp, BASE_URL } from "./init.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} from "firebase/auth";
-import admin from 'firebase-admin'
 import bcrypt from 'bcrypt'
-
-admin.initializeApp({
-    credential: admin.credential.applicationDefault()
-})
-
 const auth = getAuth(firebaseApp);
+
 
 import User from '../models/user.js'
 
@@ -21,8 +16,6 @@ fastify.post(BASE_URL+'/user', async (request, reply) => {
         const hashPass = await bcrypt.hash(password, 10)
         // console.log(hashPass)
         const fb_user = await createUserWithEmailAndPassword(auth, email, password)
-        await admin.auth().setCustomUserClaims(fb_user.user.uid, {role})
-
         const user = await User.create({
             email,
             password: hashPass,
