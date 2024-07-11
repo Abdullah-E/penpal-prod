@@ -2,9 +2,12 @@ import { fastify, firebaseApp, BASE_URL } from "./init.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} from "firebase/auth";
 import admin from 'firebase-admin'
 import bcrypt from 'bcrypt'
+const serviceAcc = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
 
 admin.initializeApp({
-    credential: admin.credential.applicationDefault()
+    credential: admin.credential.cert(
+        serviceAcc
+    )
 })
 
 const auth = getAuth(firebaseApp);
