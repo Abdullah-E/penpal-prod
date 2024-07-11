@@ -18,7 +18,12 @@ async function verifyToken(request, reply) {
         !request.headers.authorization ||
         !request.headers.authorization.startsWith("Bearer ")
     ) {
-        reply.code(401).send({ error: "Unauthorized" });
+        reply.code(401).send({
+            data: null,
+            event_code: 0,
+            message: "Unauthorized - No token",
+            status_code: 401,
+        });
         return;
     }
     
@@ -29,7 +34,12 @@ async function verifyToken(request, reply) {
     } catch (error) {
         console.error(error);
         console.log(request.headers.authorization)
-        reply.code(401).send({ error: "Unauthorized" });
+        reply.code(401).send({
+            data: null,
+            event_code: 0,
+            message: "Unauthorized - Invalid token",
+            status_code: 401,
+        });
     }
 }
 
@@ -47,12 +57,12 @@ fastify.addHook("onRequest", async (request, reply) => {
 });
 
 fastify.post(BASE_URL + "/user", async (request, reply) => {
-  console.log(request.query);
-  const role = request.query.role || "user";
-  const { email, password, firstName, lastName } = request.body;
+  console.log(request.query)
+  const role = request.query.role || "user"
+  const { email, password, firstName, lastName } = request.body
   try {
-    const hashPass = await bcrypt.hash(password, 10);
-    console.log(hashPass);
+    const hashPass = await bcrypt.hash(password, 10)
+    console.log(hashPass)
     const fb_user = await createUserWithEmailAndPassword(auth, email, password);
     await admin.auth().setCustomUserClaims(fb_user.user.uid, { role });
 
