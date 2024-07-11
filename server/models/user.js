@@ -60,7 +60,10 @@ const userSchema = new mongoose.Schema({
     personality:{
         type:Object,
         required: false
-    
+    },
+    profilePictureUrl:{
+        type:String,
+        required: false
     }
 })
 

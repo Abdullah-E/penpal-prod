@@ -4,6 +4,7 @@ import admin from 'firebase-admin'
 const serviceAcc = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
 admin.initializeApp({
   credential: admin.credential.cert(serviceAcc),
+  storageBucket: process.env.FIREBASE_STORAGEBUCKET
 })
 
 const firebaseConfig = {

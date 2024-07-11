@@ -81,7 +81,7 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       event_code: 1,
       message: "User created successfully",
       status_code: 201,
-    });
+    })
   } catch (error) {
     console.error(error);
 
@@ -101,7 +101,7 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       });
     }
   }
-});
+})
 
 fastify.put(BASE_URL + "/user", async (request, reply) => {
     //whichever keys are present in the request body will be updated
@@ -192,7 +192,7 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
         status_code: 500,
     });
   }
-});
+})
 
 fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
   const { personality} = request.body;
@@ -236,7 +236,7 @@ fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
       status_code: 500,
     });
   }
-});
+})
 
 fastify.get(BASE_URL + "/user/status", async (request, reply) => {
     if(!request.user){
@@ -317,8 +317,49 @@ fastify.post(BASE_URL + "/user/login", async (request, reply) => {
       status_code: 500,
     });
   }
-});
+})
 
+fastify.put(BASE_URL + "/user/profile-picture", async (request, reply) => {
+  if(!request.user){
+    reply.code(401).send({
+        data: null,
+        event_code: 0,
+        message: "Unauthorized",
+        status_code: 401,
+    })
+    return
+  }
+  try {
+    const user = await User.findOne({firebaseUid: request.user.uid});
+    if (!user) {
+      reply.status(404).send({
+        data: null,
+        event_code: 0,
+        message: "User not found",
+        status_code: 404,
+      })
+      return
+    }
+    user.profilePictureUrl = request.body.profilePictureUrl;
+    await user.save();
+    const userObj = user.toObject();
+    delete userObj.password;
+    reply.send({
+      data: userObj,
+      event_code: 1,
+      message: "Profile picture updated successfully",
+      status_code: 200,
+    })
+  } catch (error) {
+    console.error(error);
+    reply.status(500).send({
+      data: null,
+      event_code: 0,
+      message: error._message || error.message || error.name,
+      status_code: 500,
+    })
+  }
+})
 
 const deleteAllUsers = (nextPageToken) => {
     let uids = []
