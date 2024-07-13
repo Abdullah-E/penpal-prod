@@ -6,10 +6,11 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 
 const auth = getAuth(firebaseApp);
 
-import User from '../models/user.js'
+import User, {personalitySchema} from '../models/user.js'
 
 // import {BASE_URL} from '../server.js'
 
@@ -168,19 +169,17 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
   }
 
   try{
-    const selectedFields = ["firstName", "lastName", "email", "age", "gender", "state", "bio", "imageUrl"]
+    const selectedFields = ["firstName", "lastName", "email", "age", "gender", "state", "bio", "imageUrl", "profileComplete"]
     const user = await User.findOne({firebaseUid: request.user.uid}).select(selectedFields)
-    // const user = await User.findOne({firebaseUid: request.user.uid}).select({
-    //     "firstName": 1,
-    //     "lastName": 1,
-    //     "email": 1,
-    //     "age": 1,
-    //     "gender":1,
-    //     "state":1,
-    //     "bio":1,
-    //     "imageUrl":1
-
-    // })
+    if (!user) {
+      reply.status(404).send({
+        data: null,
+        event_code: 0,
+        message: "User not found",
+        status_code: 404,
+      });
+      return;
+    }
     const userObj = user.toObject()
     delete userObj._id
     selectedFields.forEach(field => {
@@ -249,6 +248,49 @@ fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
       status_code: 500,
     });
   }
+})
+
+fastify.get(BASE_URL + "/user/personality", async (request, reply) => {
+    if(!request.user){
+        reply.code(401).send({
+            data: null,
+            event_code: 0,
+            message: "Unauthorized",
+            status_code: 401,
+        })
+        return
+    }
+    try {
+        const user = await User.findOne({firebaseUid: request.user.uid}).select({"personality": 1})
+        if (!user) {
+          reply.status(404).send({
+              data: null,
+              event_code: 0,
+              message: "User not found",
+              status_code: 404,
+          });
+          return;
+        }
+        
+        const defaultPersonality = (new mongoose.model('temp', personalitySchema)()).toObject()
+        const userPersonality = user.personality || defaultPersonality
+        const completePersonality = {...defaultPersonality, ...userPersonality}
+        delete completePersonality._id
+        reply.send({
+            data: completePersonality,
+            event_code: 1,
+            message: "User personality fetched successfully",
+            status_code: 200,
+        });
+    } catch (error) {
+        console.error(error);
+        reply.status(500).send({
+            data: null,
+            event_code: 0,
+            message: error._message || error.message || error.name,
+            status_code: 500,
+        });
+    }
 })
 
 fastify.get(BASE_URL + "/user/status", async (request, reply) => {
