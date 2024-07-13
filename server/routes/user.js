@@ -276,12 +276,12 @@ fastify.get(BASE_URL + "/user/personality", async (request, reply) => {
           return;
         }
         
-        const defaultPersonality = (new mongoose.model('temp', personalitySchema)()).toObject()
-        const userPersonality = user.personality || defaultPersonality
-        const completePersonality = {...defaultPersonality, ...userPersonality}
-        delete completePersonality._id
+        // const defaultPersonality = 
+        let userPersonality = user.personality || (new mongoose.model('temp', personalitySchema)()).toObject()
+        userPersonality = userPersonality.toObject()
+        delete userPersonality._id
         reply.send({
-            data: completePersonality,
+            data: userPersonality,
             event_code: 1,
             message: "User personality fetched successfully",
             status_code: 200,
