@@ -77,7 +77,8 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       age:"",
       gender:"",
       state:"",
-      bio:""
+      bio:"",
+      profileComplete: false,
     });
     const userObj = user.toObject();
     delete userObj.password;
