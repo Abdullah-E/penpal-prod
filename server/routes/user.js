@@ -277,7 +277,8 @@ fastify.get(BASE_URL + "/user/personality", async (request, reply) => {
         }
         
         // const defaultPersonality = 
-        let userPersonality = user.personality || (new mongoose.model('temp', personalitySchema)()).toObject()
+        let userPersonality = user.personality || (new mongoose.model('temp', personalitySchema)())
+        
         userPersonality = userPersonality.toObject()
         delete userPersonality._id
         reply.send({
