@@ -19,27 +19,27 @@ const userSchema = new mongoose.Schema({
     },
     firstName: {
         type: String,
-        required: true
+        required: true,
     },
     lastName: {
         type: String,
-        required: true
+        required: true,
     },
     age: {
-        type: Number,
-        required: false
+        type: String,
+        required: false,
     },
     gender:{
         type: String,
-        required: false
+        required: false,
     },
     state:{
         type: String,
-        required: false
+        required: false,
     },
     bio:{
         type: String,
-        required: false
+        required: false,
     },
     firebaseUid: {
         type: String,
@@ -65,7 +65,7 @@ const userSchema = new mongoose.Schema({
         type:Object,
         required: false
     },
-    profilePictureUrl:{
+    imageUrl:{
         type:String,
         required: false
     }

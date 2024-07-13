@@ -73,6 +73,10 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       lastName,
       firebaseUid: fb_user.user.uid,
       role,
+      age:"",
+      gender:"",
+      state:"",
+      bio:""
     });
     const userObj = user.toObject();
     delete userObj.password;
@@ -164,17 +168,26 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
   }
 
   try{
-    const user = await User.findOne({firebaseUid: request.user.uid}).select({
-        "firstName": 1,
-        "lastName": 1,
-        "email": 1,
-        "age": 1,
-        "gender":1,
-        "state":1,
+    const selectedFields = ["firstName", "lastName", "email", "age", "gender", "state", "bio", "imageUrl"]
+    const user = await User.findOne({firebaseUid: request.user.uid}).select(selectedFields)
+    // const user = await User.findOne({firebaseUid: request.user.uid}).select({
+    //     "firstName": 1,
+    //     "lastName": 1,
+    //     "email": 1,
+    //     "age": 1,
+    //     "gender":1,
+    //     "state":1,
+    //     "bio":1,
+    //     "imageUrl":1
 
-    })
+    // })
     const userObj = user.toObject()
-    delete userObj.password;
+    delete userObj._id
+    selectedFields.forEach(field => {
+        if(!userObj[field]){
+            userObj[field] = ""
+        }
+    })
     reply.send({
         data: userObj,
         event_code: 1,
@@ -340,7 +353,7 @@ fastify.put(BASE_URL + "/user/profile-picture", async (request, reply) => {
       })
       return
     }
-    user.profilePictureUrl = request.body.profilePictureUrl;
+    user.imgUrl = request.body.imgUrl;
     await user.save();
     const userObj = user.toObject();
     delete userObj.password;
