@@ -78,7 +78,7 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       gender:"",
       state:"",
       bio:"",
-      profileComplete: false,
+      profileComplete: false
     });
     const userObj = user.toObject();
     delete userObj.password;
@@ -184,7 +184,10 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
     const userObj = user.toObject()
     delete userObj._id
     selectedFields.forEach(field => {
-        if(!userObj[field]){
+        if (field === "profileComplete") {
+          
+        }
+        else if(!userObj[field]){
             userObj[field] = ""
         }
     })
