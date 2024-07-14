@@ -69,6 +69,12 @@ const customerSchema = new mongoose.Schema({
         type:String,
         enum:EYE_TYPES,
         required:true
+    },
+
+    createdAt: {
+        type: Date,
+        required: true,
+        default: Date.now
     }
 })
 
