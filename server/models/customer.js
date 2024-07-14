@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { personalitySchema } from "./personality.js";
 
 const HAIR_TYPES = ["Bald", "Black", "Blonde", "Brown", "Gray", "Red", "Salt and Pepper", "Other"]
 const EYE_TYPES = [
@@ -69,6 +70,15 @@ const customerSchema = new mongoose.Schema({
         type:String,
         enum:EYE_TYPES,
         required:true
+    },
+    profileComplete:{
+        type:Boolean,
+        required:true,
+        default:false
+    },
+    personality:{
+        type:personalitySchema,
+        required:false
     },
 
     createdAt: {

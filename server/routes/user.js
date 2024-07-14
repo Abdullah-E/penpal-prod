@@ -10,7 +10,8 @@ import mongoose from "mongoose";
 
 const auth = getAuth(firebaseApp);
 
-import User, {personalitySchema} from '../models/user.js'
+import User from '../models/user.js'
+import { personalitySchema } from '../models/personality.js'
 
 // import {BASE_URL} from '../server.js'
 
