@@ -1,9 +1,44 @@
 import mongoose from "mongoose"
 
-const USER_ROLES = [
-    'user',
-    'admin'
-]
+export const personalitySchema = new mongoose.Schema({
+    hobbies:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    sports:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    likes:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    personality:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    bookGenres:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    musicGenres:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    movieGenres:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+})
+
+const USER_ROLES = ['user', 'admin']
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -11,7 +46,7 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    email_verified: {
+    emailVerified: {
         type: Boolean,
         required: true,
         default: false
@@ -20,11 +55,31 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    fullname: {
+    firstName: {
         type: String,
-        required: true
+        required: true,
     },
-    firebase_uid: {
+    lastName: {
+        type: String,
+        required: true,
+    },
+    age: {
+        type: String,
+        required: false,
+    },
+    gender:{
+        type: String,
+        required: false,
+    },
+    state:{
+        type: String,
+        required: false,
+    },
+    bio:{
+        type: String,
+        required: false,
+    },
+    firebaseUid: {
         type: String,
         required: true
     },
@@ -37,6 +92,20 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: USER_ROLES,
         default: USER_ROLES[0],
+        required: true
+    },
+    profileComplete:{
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    imageUrl:{
+        type:String,
+        required: false
+    },
+    personality:{
+        type:personalitySchema,
+        required: false
     }
 })
 
