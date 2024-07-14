@@ -10,14 +10,14 @@ admin.initializeApp({
 const firebaseConfig = {
     apiKey: process.env.FIREBASE_APIKEY,
     authDomain: process.env.FIREBASE_AUTHDOMAIN,
-    projectId: process.env.FIREBASE_PROJECTID,
+    projectId: process.env.FIREBASE_PROJECT_ID,
     storageBucket: process.env.FIREBASE_STORAGEBUCKET,
     messagingSenderId: process.env.FIREBASE_MESSAGINGSENDERID,
     appId: process.env.FIREBASE_APPID,
     measurementID: process.env.FIREBASE_MEASUREMENTID
 };
 
-console.log("fb conf:",firebaseConfig)
+// console.log("fb conf:",firebaseConfig)
 
 export const firebaseApp = initializeApp(firebaseConfig)
 export {admin}

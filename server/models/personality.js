@@ -1,0 +1,39 @@
+import mongoose from "mongoose"
+
+export const personalitySchema = new mongoose.Schema({
+    hobbies:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    sports:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    likes:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    personality:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    bookGenres:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    musicGenres:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+    movieGenres:{
+        type:[String],
+        required:true,
+        default:[]
+    },
+})
