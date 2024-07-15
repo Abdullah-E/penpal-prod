@@ -44,14 +44,14 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
         // const customers = await Customer.find(query).exec();
         return reply.code(200).send({
             data:customers,
-            message:"Customer found successfully",
+            message:`Customer${ids&&ids.length>1?'s':''} found successfully`,
             event_code:1,
             status_code:200
         })
     }catch(error){
         console.error(error)
         return reply.code(400).send({
-            message:"Customer not created",
+            message:"Customer not found",
             event_code:0,
             status_code:400,
             data:null
