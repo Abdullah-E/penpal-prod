@@ -72,5 +72,11 @@ const userSchema = new mongoose.Schema({
     }
 })
 
+userSchema.pre('save', function(next) {
+    this.profileComplete = userComplete(this);
+    console.log('pre save', this.firstName, this.profileComplete)
+    next();
+});
+
 const User = mongoose.model('User', userSchema)
 export default User

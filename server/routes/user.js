@@ -58,6 +58,26 @@ fastify.addHook("onRequest", async (request, reply) => {
   }
 });
 
+function userComplete(user){
+  fields_to_check = [
+  "age",
+  "gender",
+  "state",
+  "bio"
+  ]
+
+  
+  if(!user.personality){
+    return false
+  }else if(Object.keys(user.personality).length === 0){
+    return false
+  }
+  return fields_to_check.every(field => user[field] !== "")
+
+}
+
+
+//USER ROUTES:
 fastify.post(BASE_URL + "/user", async (request, reply) => {
   console.log(request.query)
   const role = request.query.role || "user"
@@ -234,7 +254,7 @@ fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
       return;
     }
     user.personality = personality;
-    user.profileComplete = true;
+    // user.profileComplete = true;
     await user.save();
     const userObj = user.toObject();
     delete userObj.password;
