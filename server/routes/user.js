@@ -59,25 +59,6 @@ fastify.addHook("onRequest", async (request, reply) => {
   }
 });
 
-function userComplete(user){
-  fields_to_check = [
-  "age",
-  "gender",
-  "state",
-  "bio"
-  ]
-
-  
-  if(!user.personality){
-    return false
-  }else if(Object.keys(user.personality).length === 0){
-    return false
-  }
-  return fields_to_check.every(field => user[field] !== "")
-
-}
-
-
 //USER ROUTES:
 fastify.post(BASE_URL + "/user", async (request, reply) => {
   console.log(request.query)
