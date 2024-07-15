@@ -1,5 +1,5 @@
 {
-  "Hobbies": [
+  "hobbies": [
     "Crocheting",
     "Sewing",
     "Drawing",
@@ -13,8 +13,9 @@
     "Videogaming",
     "Quilting",
     "Writing",
-    "Card Games",
-    "Sports",
+    "Card Games"
+  ],
+  "sports": [
     "Football",
     "Basketball",
     "Soccer",
@@ -27,7 +28,7 @@
     "Wrestling",
     "Golf"
   ],
-  "Likes/Dislikes": [
+  "likes": [
     "Fast Food",
     "Politics",
     "Tattoos",
@@ -46,7 +47,7 @@
     "Cats",
     "Music"
   ],
-  "Personality": [
+  "personality": [
     "Shy",
     "Outgoing",
     "Funny",
@@ -62,7 +63,7 @@
     "Loud",
     "Smart"
   ],
-  "Book Genres": [
+  "bookGenres": [
     "Educational",
     "Biography",
     "Autobiography",
@@ -81,7 +82,7 @@
     "Drama",
     "Faith"
   ],
-  "Music Genres": [
+  "musicGenres": [
     "Classic Rock",
     "Soft Rock",
     "Pop",
@@ -98,7 +99,7 @@
     "Latin",
     "Christian/Gospel"
   ],
-  "Movie Genres": [
+  "movieGenres": [
     "Action",
     "Comedy",
     "Drama",

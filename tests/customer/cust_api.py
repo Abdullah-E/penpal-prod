@@ -5,7 +5,8 @@ from faker import Faker
 import datetime
 import json
 
-BASE_URL = 'http://localhost:8000/api/v1'  # Replace with your server's URL
+# BASE_URL = 'http://localhost:8000/api/v1'  # Replace with your server's URL
+BASE_URL = 'https://penpal-prod.vercel.app/api/v1'
 fake = Faker()
 
 with open('customer/test_data/personality_data.json', 'r') as file:
@@ -45,8 +46,10 @@ def customer_data():
     }
 
 def test_create_customer(customer_data):
+    with open('customer/test_data/customer_data.json', 'w') as file:
+        json.dump(customer_data, file)
     response = requests.post(f"{BASE_URL}/customer/test", json=customer_data)
-    
+    # write customer data to file:
     assert response.status_code == 201, f"Expected status code 201, got {response.status_code} , response: {response.json()}"
     
     assert response.json()['status_code'] == 201
