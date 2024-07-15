@@ -11,6 +11,7 @@ import mongoose from "mongoose";
 const auth = getAuth(firebaseApp);
 
 import User from '../models/user.js'
+import Customer from "../models/customer.js";
 import { personalitySchema } from '../models/personality.js'
 
 // import {BASE_URL} from '../server.js'
@@ -48,7 +49,7 @@ async function verifyToken(request, reply) {
 fastify.addHook("onRequest", async (request, reply) => {
   const isExcludedRoute =
     (request.routeOptions.url === BASE_URL + "/user" && request.method === "POST" )||
-    (request.routeOptions.url === BASE_URL + "/user/login" && request.method === "POST");
+    (request.routeOptions.url === BASE_URL + "/user/login" && request.method === "POST")
   if (
     !isExcludedRoute &&
     request.routeOptions.url &&
@@ -356,6 +357,31 @@ fastify.get(BASE_URL + "/user/status", async (request, reply) => {
             status_code: 500,
         });
     }
+})
+
+fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
+
+    if(!request.user){
+        reply.code(401).send({
+            data: null,
+            event_code: 0,
+            message: "Unauthorized",
+            status_code: 401,
+        })
+        return
+    }
+    try {
+      const num = request.query.n || 5
+      const matches = await Customer.aggregate([{ $sample: { size: num } }]).exec();
+        reply.send({
+            data: matches,
+            event_code: 1,
+            message: "Matches fetched successfully",
+            status_code: 200,
+        })
+    } catch (error) {
+    }
+
 })
 
 fastify.post(BASE_URL + "/user/login", async (request, reply) => {
