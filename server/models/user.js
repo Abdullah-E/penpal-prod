@@ -3,6 +3,24 @@ import { personalitySchema } from "./personality.js"
 
 const USER_ROLES = ['user', 'admin']
 
+function userComplete(user){
+    const fields_to_check = [
+    "age",
+    "gender",
+    "state",
+    "bio"
+    ]
+  
+    
+    if(!user.personality){
+      return false
+    }else if(Object.keys(user.personality).length === 0){
+      return false
+    }
+    return fields_to_check.every(field => user[field] !== "")
+  
+  }
+
 const userSchema = new mongoose.Schema({
     email: {
         type: String,
@@ -71,6 +89,12 @@ const userSchema = new mongoose.Schema({
         required: false
     }
 })
+
+userSchema.pre('save', function(next) {
+    this.profileComplete = userComplete(this);
+    console.log('pre save', this.firstName, this.profileComplete)
+    next();
+});
 
 const User = mongoose.model('User', userSchema)
 export default User
