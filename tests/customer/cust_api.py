@@ -5,7 +5,10 @@ from faker import Faker
 import datetime
 import json
 
-with open('test_data/personality_data.json', 'r') as file:
+BASE_URL = 'http://localhost:8000/api/v1'  # Replace with your server's URL
+fake = Faker()
+
+with open('customer/test_data/personality_data.json', 'r') as file:
     personality_data = json.load(file)
 
 HAIR_TYPES = ["Bald", "Black", "Blonde", "Brown", "Gray", "Red", "Salt and Pepper", "Other"]
@@ -20,6 +23,11 @@ EYE_TYPES = [
 
 @pytest.fixture
 def customer_data():
+    def get_random_traits(traits, max_count=3):
+        return random.sample(traits, random.randint(1, max_count))
+    
+    personality = {category: get_random_traits(traits) for category, traits in personality_data.items()}
+    
     return {
         "firstName": fake.first_name(),
         "lastName": fake.last_name(),
@@ -33,11 +41,11 @@ def customer_data():
         "weight": fake.random_int(min=50, max=100),
         "hairColor": random.choice(HAIR_TYPES),
         "eyeColor": random.choice(EYE_TYPES),
-        
+        "personality": personality
     }
 
 def test_create_customer(customer_data):
-    response = requests.post(f"{BASE_URL}/customer", json=customer_data)
+    response = requests.post(f"{BASE_URL}/customer/test", json=customer_data)
     
     assert response.status_code == 201, f"Expected status code 201, got {response.status_code} , response: {response.json()}"
     
@@ -56,3 +64,4 @@ def test_create_customer(customer_data):
     assert 'weight' in response.json()['data']
     assert 'hairColor' in response.json()['data']
     assert 'eyeColor' in response.json()['data']
+    assert 'personality' in response.json()['data']
