@@ -146,7 +146,7 @@ fastify.post(BASE_URL + '/customer/review/test', async(request, reply)=>{
         const newNumRatings = oldNumRatings + 1;
         customerToUpdate.rating = newRating;
         customerToUpdate.numRatings = newNumRatings;
-        const updatedCustomer = await customerToUpdate.save().lean();
+        const updatedCustomer = await customerToUpdate.save()
         reply.code(200).send({
             data:updatedCustomer,
             message:"Review added successfully",
