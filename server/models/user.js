@@ -109,7 +109,7 @@ const userSchema = new mongoose.Schema({
         },
         score: Number
     }],
-    favoriteId:{
+    favorite:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Favorite'
     

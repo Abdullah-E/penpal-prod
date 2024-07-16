@@ -11,6 +11,7 @@ import mongoose from "mongoose";
 
 import User from "../models/user.js";
 import Customer from "../models/customer.js";
+import Favorite from "../models/favorite.js";
 import { personalitySchema } from "../models/personality.js";
 
 import { verifyToken } from "../utils/firebase_utils.js";
@@ -413,6 +414,67 @@ fastify.put(BASE_URL + "/user/profile-picture", async (request, reply) => {
     });
   }
 });
+
+fastify.put(BASE_URL + "/user/favorite", async (request, reply) => {
+  if (!request.user) {
+    reply.code(401).send({
+      data: null,
+      event_code: 0,
+      message: "Unauthorized",
+      status_code: 401,
+    })
+    return
+  }
+  try {
+    const param = request.query
+    const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+    const user = await User
+    .findOne({ firebaseUid: request.user.uid })
+    .select('favorite')
+    
+    if (!user) {
+      reply.status(404).send({
+        data: null,
+        event_code: 0,
+        message: "User not found",
+        status_code: 404,
+      });
+      return;
+    }
+    let favorite
+    if(!user.favorite){
+      favorite = await Favorite.create({
+        user: user._id,
+        favorites: ids
+      })
+      user.favorite = favorite._id
+      await user.save()
+    }else{
+      favorite = await Favorite.findOneAndUpdate(
+        {_id:user.favorite},
+        {$addToSet:{favorites:ids}},
+        {new:true}
+      )
+    }
+    console.log(user)
+    
+
+    reply.send({
+      data: favorite,
+      event_code: 1,
+      message: "Favorite added successfully",
+      status_code: 201,
+    });
+  } catch (error) {
+    console.error(error);
+    reply.status(500).send({
+      data: null,
+      event_code: 0,
+      message: error._message || error.message || error.name,
+      status_code: 500,
+    });
+  }
+})
 
 fastify.post(BASE_URL + "/user/login", async (request, reply) => {
   const { email, password } = request.body;
