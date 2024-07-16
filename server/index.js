@@ -8,6 +8,7 @@ fastify.get(BASE_URL, async () => {
 
 import "./routes/user.js";
 import "./routes/customer.js";
+import "./routes/message.js";
 
 async function startServer() {
   try {

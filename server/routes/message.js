@@ -12,7 +12,17 @@ fastify.post(BASE_URL + '/message', async(request, reply)=>{
     try{
         const {_id:senderId} = await User.findOne({firebaseUid:request.user.uid}).select('_id').exec()
         const {receiverId, messageText, fileLink} = request.body
-        const newMessage = new Message({senderId, receiverId, messageText, fileLink})
+        const specifiedVals = {
+            senderId, receiverId, messageText, fileLink
+        }
+        const defaultVals = {
+            messageText: "",
+            fileLink: ""
+        }
+        const newMessage = new Message({
+            ...defaultVals,
+            ...specifiedVals
+        })
         const message = await newMessage.save()
         reply.code(201).send({
             data:message,

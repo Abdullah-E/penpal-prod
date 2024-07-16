@@ -108,7 +108,13 @@ const userSchema = new mongoose.Schema({
             ref: 'Customer'
         },
         score: Number
-    }]
+    }],
+    favoriteId:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Favorite'
+    
+    }
+
 })
 
 userSchema.pre('save', async function(next) {
