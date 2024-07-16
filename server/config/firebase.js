@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
 import admin from 'firebase-admin'
 
 const serviceAcc = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
@@ -19,5 +20,6 @@ const firebaseConfig = {
 
 // console.log("fb conf:",firebaseConfig)
 
-export const firebaseApp = initializeApp(firebaseConfig)
+const firebaseApp = initializeApp(firebaseConfig)
+export const auth = getAuth(firebaseApp)
 export {admin}

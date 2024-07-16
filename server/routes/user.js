@@ -1,50 +1,21 @@
 import { fastify, BASE_URL } from "./init.js";
-import { firebaseApp, admin } from "../config/firebase.js";
+import { auth, admin } from "../config/firebase.js";
 import {
-  getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 
-const auth = getAuth(firebaseApp);
+// const auth = getAuth(firebaseApp);
 
 import User from "../models/user.js";
 import Customer from "../models/customer.js";
 import { personalitySchema } from "../models/personality.js";
 
+import { verifyToken } from "../utils/firebase_utils.js";
+
 // import {BASE_URL} from '../server.js'
-
-async function verifyToken(request, reply) {
-  if (
-    !request.headers.authorization ||
-    !request.headers.authorization.startsWith("Bearer ")
-  ) {
-    reply.code(401).send({
-      data: null,
-      event_code: 0,
-      message: "Unauthorized - No token",
-      status_code: 401,
-    });
-    return;
-  }
-
-  const idToken = request.headers.authorization.split("Bearer ")[1];
-  try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    request.user = decodedToken;
-  } catch (error) {
-    console.error(error);
-    console.log(request.headers.authorization);
-    reply.code(401).send({
-      data: null,
-      event_code: 0,
-      message: "Unauthorized - Invalid token",
-      status_code: 401,
-    });
-  }
-}
 
 fastify.addHook("onRequest", async (request, reply) => {
   const isExcludedRoute =
@@ -364,16 +335,41 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
   }
   try {
     const num = request.query.n || 5;
-    const matches = await Customer.aggregate([
-      { $sample: { size: num } },
-    ]).exec();
+    const user = await User.findOne({ firebaseUid: request.user.uid })
+      .select({compatibleCustomers:1})
+      .populate("compatibleCustomers.customerId")
+      .exec();
+    
+    if (!user) {
+      reply.status(404).send({
+        data: null,
+        event_code: 0,
+        message: "User not found",
+        status_code: 404,
+      });
+      return;
+    }
+    const matches = user.compatibleCustomers.map((match) => {
+      const customer = match.customerId;
+      const matchObj = customer.toObject();
+      delete matchObj._id;
+      return matchObj;
+    })
     reply.send({
       data: matches,
       event_code: 1,
       message: "Matches fetched successfully",
       status_code: 200,
     });
-  } catch (error) {}
+  } catch (error) {
+    console.error(error);
+    return reply.status(500).send({
+      data: null,
+      event_code: 0,
+      message: error._message || error.message || error.name,
+      status_code: 500,
+    });
+  }
 });
 
 fastify.put(BASE_URL + "/user/profile-picture", async (request, reply) => {
