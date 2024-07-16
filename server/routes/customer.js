@@ -3,10 +3,35 @@ import Customer from "../models/customer.js";
 
 fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
     try{
-        const customer = new Customer(request.body);
-        await customer.save();
+        const defaultValues = {
+            firstName: "",
+            lastName: "",
+            inmateNumber: "",
+            mailingAddress: "",
+            city: "",
+            state: "",
+            zipcode: "",
+            gender: "",
+            race: "",
+            education: "",
+            age: "",
+            dateOfBirth: new Date(0),
+            height: "",
+            weight: "",
+            hairColor: "",
+            eyeColor: "",
+            profileComplete: false,
+            personality: {},
+            rating: null,
+            numRatings: 0,
+            createdAt: Date.now()
+        };
+        // const customer = new Customer({...defaultValues, ...request.body});
+        // console.log(customer)
+        // const customer = new Customer(request.body);
+        const newUser = await Customer.create({...defaultValues, ...request.body});
         return reply.code(201).send({
-            data:customer,
+            data:newUser,
             message:"Customer created successfully",
             event_code:1,
             status_code:201
@@ -19,7 +44,6 @@ fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
             status_code:400,
             data:null
         });
-        return error;
     }
 })
 fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
@@ -102,6 +126,37 @@ fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{
         console.error(error)
         reply.code(400).send({
             message:"Personality not updated",
+            event_code:0,
+            status_code:400,
+            data:null
+        });
+    }
+})
+
+fastify.post(BASE_URL + '/customer/review/test', async(request, reply)=>{
+    try{
+        const {id} = request.query;
+        const {rating} = request.body;
+        const customerToUpdate = await Customer.findOne({_id:id}).exec();
+        const oldRating = customerToUpdate.rating || 0;
+        const oldNumRatings = customerToUpdate.numRatings || 0;
+
+        const newRating = ((oldRating * oldNumRatings) + rating) / (oldNumRatings + 1);
+        console.log(oldRating, oldNumRatings, rating, newRating)
+        const newNumRatings = oldNumRatings + 1;
+        customerToUpdate.rating = newRating;
+        customerToUpdate.numRatings = newNumRatings;
+        const updatedCustomer = await customerToUpdate.save().lean();
+        reply.code(200).send({
+            data:updatedCustomer,
+            message:"Review added successfully",
+            event_code:1,
+            status_code:200
+        })
+    }catch(error){
+        console.error(error)
+        reply.code(400).send({
+            message:"Review not added",
             event_code:0,
             status_code:400,
             data:null

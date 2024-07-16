@@ -47,18 +47,39 @@ const customerSchema = new mongoose.Schema({
         required: true,
         default:""
     },
+    gender:{
+        type:String,
+        required:false,
+        default:""
+    },
+    race:{
+        type:String,
+        required:false,
+        default:""
+    },
+    education:{
+        type:String,
+        required:false,
+        default:""
+    },
+    age:{
+        type:String,
+        required:false,
+        default:""
+    },
     dateOfBirth:{
         type:Date,
-        required:true
+        required:false,
+        default: new Date(0)
     },
     height:{
         type:String,
-        required:true,
+        required:false,
         default:""
     },
     weight:{
         type: String,
-        required: true,
+        required: false,
         default:""
     },
     hairColor:{
@@ -78,13 +99,19 @@ const customerSchema = new mongoose.Schema({
     },
     personality:{
         type:personalitySchema,
-        required:false
+        required:false,
+        default: () => ({})
     },
     rating:{
         type:Number,
         required:false,
         min:1,
         max:5
+    },
+    numRatings:{
+        type:Number,
+        required:false,
+        default:0
     },
 
     createdAt: {
