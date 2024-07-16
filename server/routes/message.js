@@ -2,18 +2,16 @@ import { fastify, BASE_URL } from "./init.js"
 // import {auth, admin} from "../config/firebase.js"
 import User from "../models/user.js"
 import Message from "../models/message.js"
-import { verifyToken } from "../utils/firebase_utils.js"
-
-
-
+import { verifyToken, getUserFromToken } from "../utils/firebase_utils.js"
 
 fastify.post(BASE_URL + '/message', async(request, reply)=>{
     await verifyToken(request, reply)
     try{
-        const {_id:senderId} = await User.findOne({firebaseUid:request.user.uid}).select('_id').exec()
-        const {receiverId, messageText, fileLink} = request.body
+        const {_id:sender} = await User.findOne({firebaseUid:request.user.uid}).select('_id').exec()
+        const {id:receiver}= request.query
+        const {messageText, fileLink} = request.body
         const specifiedVals = {
-            senderId, receiverId, messageText, fileLink
+            sender, receiver, messageText, fileLink
         }
         const defaultVals = {
             messageText: "",
@@ -40,4 +38,28 @@ fastify.post(BASE_URL + '/message', async(request, reply)=>{
         })
     }
 
+})
+
+fastify.get(BASE_URL + '/message', async(request, reply)=>{
+    try{
+        await verifyToken(request, reply)
+        const {_id:sender} = await User.findOne({firebaseUid:request.user.uid}).select('_id').exec()
+
+        const foundMessages = await Message.find({sender}).populate('receiver').exec()
+        reply.code(200).send({
+            data:foundMessages,
+            message:"Messages retrieved successfully",
+            event_code:1,
+            status_code:200
+        })
+
+    }catch(error){
+        console.error(error)
+        reply.code(400).send({
+            data:null,
+            message:"Messages not retrieved",
+            event_code:0,
+            status_code:400
+        })
+    }
 })

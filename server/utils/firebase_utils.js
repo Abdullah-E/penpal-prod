@@ -29,3 +29,21 @@ export async function verifyToken(request, reply) {
       });
     }
   }
+
+
+export async function getUserFromToken(request){
+    if (
+        !request.headers.authorization ||
+        !request.headers.authorization.startsWith("Bearer ")
+      ) {
+        return null
+    }
+    const idToken = request.headers.authorization.split("Bearer ")[1];
+    try {
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        return decodedToken
+    } catch (error) {
+        console.error(error);
+        return null
+    }
+}
