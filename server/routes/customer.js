@@ -61,10 +61,10 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
         //if no ids specified return first 5 customers:
         let customers
         if(!ids || ids.length === 0){
-            customers = await Customer.find(query).sort({[sort_on]:1}).limit(5).exec();
+            customers = await Customer.find(query).sort({[sort_on]:-1}).limit(5).exec();
         }
         else{
-            customers = await Customer.find(query).sort({[sort_on]:1}).exec();
+            customers = await Customer.find(query).sort({[sort_on]:-1}).exec();
         }
         
         // const customers = await Customer.find(query).exec();

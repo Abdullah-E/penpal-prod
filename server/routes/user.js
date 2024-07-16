@@ -456,7 +456,7 @@ fastify.put(BASE_URL + "/user/favorite", async (request, reply) => {
         {new:true}
       )
     }
-    console.log(user)
+    // console.log(user)
     
 
     reply.send({
@@ -475,6 +475,61 @@ fastify.put(BASE_URL + "/user/favorite", async (request, reply) => {
     });
   }
 })
+
+fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
+  if (!request.user) {
+    reply.code(401).send({
+      data: null,
+      event_code: 0,
+      message: "Unauthorized",
+      status_code: 401,
+    })
+    return
+  }
+  try {
+    const user = await User
+    .findOne({ firebaseUid: request.user.uid })
+    .select('favorite')
+    .populate('favorite')
+    
+    
+    if (!user) {
+      reply.status(404).send({
+        data: null,
+        event_code: 0,
+        message: "User not found",
+        status_code: 404,
+      });
+      return;
+    }
+    if(!user.favorite){
+      reply.status(200).send({
+        data: [],
+        event_code: 0,
+        message: "empty list",
+        status_code: 200,
+      });
+      return;
+    }
+
+    console.log(user.favorite)
+    reply.send({
+      data: await user.favorite.populate('favorites'),
+      event_code: 1,
+      message: "Favorite fetched successfully",
+      status_code: 200,
+    });
+  } catch (error) {
+    console.error(error);
+    reply.status(500).send({
+      data: null,
+      event_code: 0,
+      message: error._message || error.message || error.name,
+      status_code: 500,
+    });
+  }
+})
+
 
 fastify.post(BASE_URL + "/user/login", async (request, reply) => {
   const { email, password } = request.body;
