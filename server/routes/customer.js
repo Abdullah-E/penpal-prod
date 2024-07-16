@@ -59,6 +59,28 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
     }
 })
 
+fastify.put(BASE_URL + '/customer/test', async(request, reply)=>{
+    try{
+        const {id} = request.query
+        const customerToUpdate = await Customer.findOneAndUpdate({_id:id}, request.body, {new:true}).lean().exec()
+        reply.code(200).send({
+            data:customerToUpdate,
+            message:"Customer updated successfully",
+            event_code:1,
+            status_code:200
+        });
+    }catch(error){
+        console.error(error)
+        reply.code(400).send({
+            message:"Customer not updated",
+            event_code:0,
+            status_code:400,
+            data:null
+        });
+    }
+        
+})
+
 fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{
     try{
         const {id} = request.query;
@@ -68,7 +90,7 @@ fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{
             {_id:id},
             {personality:personality},
             {new:true}
-        )
+        ).lean()
         .exec();
         reply.code(200).send({
             data:customerToUpdate,

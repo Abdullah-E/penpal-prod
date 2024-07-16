@@ -80,6 +80,12 @@ const customerSchema = new mongoose.Schema({
         type:personalitySchema,
         required:false
     },
+    rating:{
+        type:Number,
+        required:false,
+        min:1,
+        max:5
+    },
 
     createdAt: {
         type: Date,
