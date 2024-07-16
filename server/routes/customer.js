@@ -51,18 +51,20 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
         //id could be string or array of strings
         const param = request.query
         const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const sort_on = param["sort_on"] || "createdAt"
         //specify other params here
         const query = {
-            ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+            ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
+
             //add them in here
         }
         //if no ids specified return first 5 customers:
         let customers
         if(!ids || ids.length === 0){
-            customers = await Customer.find(query).limit(5).exec();
+            customers = await Customer.find(query).sort({[sort_on]:1}).limit(5).exec();
         }
         else{
-            customers = await Customer.find(query).exec();
+            customers = await Customer.find(query).sort({[sort_on]:1}).exec();
         }
         
         // const customers = await Customer.find(query).exec();
