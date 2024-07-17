@@ -128,7 +128,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function(next) {
     this.profileComplete = userComplete(this);
     if (this.isModified('personality')) {
-        const customers = await Customer.find().exec();
+        const customers = await Customer.find().limit(20);
         const compatibilityScores = customers.map(customer => {
             return {
                 customerId: customer._id,
@@ -138,7 +138,7 @@ userSchema.pre('save', async function(next) {
 
         // Sort customers by compatibility score in descending order and get the top 5
         compatibilityScores.sort((a, b) => b.score - a.score);
-        this.compatibleCustomers = compatibilityScores.slice(0, 5);
+        this.compatibleCustomers = compatibilityScores
     }
     // console.log('pre save', this.firstName, this.profileComplete)
     next();

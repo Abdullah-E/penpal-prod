@@ -336,23 +336,30 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     return;
   }
   try {
-    const num = request.query.n || 5;
-    const user = await User.findOne({ firebaseUid: request.user.uid })
-      .select({compatibleCustomers:1})
-      .populate("compatibleCustomers.customerId")
-      .lean()
-      .exec();
+    const {p:page, l:limit} = request.query;
+
+    // const user = await User.findOne({ firebaseUid: request.user.uid })
+    //   .select({compatibleCustomers:1})
+    //   .populate("compatibleCustomers.customerId")
+    //   .lean()
+    //   .exec();
     
-    if (!user) {
-      reply.status(404).send({
-        data: null,
-        event_code: 0,
-        message: "User not found",
-        status_code: 404,
-      });
-      return;
-    }
-    let matches = await flagFavorites(request.user.uid, user.compatibleCustomers.map(({customerId})=>customerId))
+    const customerList = await User.aggregate([
+      {$match:{firebaseUid:request.user.uid}},
+      {$project:{compatibleCustomers:1,_id:0}},
+      {$lookup:{
+        from:"customers",
+        localField:"compatibleCustomers.customerId",
+        foreignField:"_id",
+        as:"compatibleCustomers"
+      }},
+      {$unwind:"$compatibleCustomers"},
+      {$replaceRoot:{newRoot:"$compatibleCustomers"}},
+      {$skip:(page)*limit},
+      {$limit:parseInt(limit)},
+    ]).exec()
+    // console.log(customerList)
+    let matches = await flagFavorites(request.user.uid, customerList)
     matches = await flagRatings(request.user.uid, matches)
     reply.send({
       data: matches,
@@ -645,7 +652,7 @@ fastify.get(BASE_URL + "/user/update-compatibility", async (request, reply) => {
     return
   }
   const user = await User.findOne({firebaseUid:request.user.uid})
-  const customers = await Customer.find().exec()
+  const customers = await Customer.find().limit(20).exec()
   const compatibilityScores = customers.map(customer => {
       return {
           customerId: customer._id,
@@ -655,6 +662,6 @@ fastify.get(BASE_URL + "/user/update-compatibility", async (request, reply) => {
 
   // Sort customers by compatibility score in descending order and get the top 5
   compatibilityScores.sort((a, b) => b.score - a.score)
-  user.compatibleCustomers = compatibilityScores.slice(0, 5)
+  user.compatibleCustomers = compatibilityScores
   await user.save()
 })

@@ -116,8 +116,7 @@ fastify.put(BASE_URL + '/customer/test', async(request, reply)=>{
             status_code:400,
             data:null
         });
-    }
-        
+    }      
 })
 
 fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{
