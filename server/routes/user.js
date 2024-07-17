@@ -15,7 +15,7 @@ import Favorite from "../models/favorite.js";
 import { personalitySchema } from "../models/personality.js";
 
 import { verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites } from "../utils/db_utils.js";
+import { flagFavorites, flagRatings } from "../utils/db_utils.js";
 
 // import {BASE_URL} from '../server.js'
 
@@ -352,7 +352,8 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
       });
       return;
     }
-    const matches = await flagFavorites(request.user.uid, user.compatibleCustomers.map(({customerId})=>customerId))
+    let matches = await flagFavorites(request.user.uid, user.compatibleCustomers.map(({customerId})=>customerId))
+    matches = await flagRatings(request.user.uid, matches)
     reply.send({
       data: matches,
       event_code: 1,
@@ -524,7 +525,7 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
       favorite["isFavorite"] = true
       return favorite
     })
-
+    favorites = await flagRatings(request.user.uid, favorites)
     reply.send({
       data: favorites,
       event_code: 1,

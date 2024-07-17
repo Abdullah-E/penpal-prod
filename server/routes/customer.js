@@ -2,7 +2,7 @@ import { fastify, BASE_URL } from "./init.js";
 import Customer from "../models/customer.js";
 
 import {getUserFromToken,verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites } from "../utils/db_utils.js";
+import { flagFavorites, flagRatings } from "../utils/db_utils.js";
 import User from "../models/user.js";
 // import User from "../models/user.js";
 
@@ -76,6 +76,7 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
         const fb_user = await getUserFromToken(request);
         if(fb_user && fb_user.role === "user"){
             customers = await flagFavorites(fb_user.uid, customers)
+            customers = await flagRatings(fb_user.uid, customers)
             // console.log(customers)
         }
         // const customers = await Customer.find(query).exec();
@@ -156,24 +157,27 @@ fastify.put(BASE_URL + '/customer/review/test', async(request, reply)=>{
         const customerToUpdate = await Customer.findOne({_id:id}).exec();
         const oldRating = customerToUpdate.rating || 0;
         const oldNumRatings = customerToUpdate.numRatings || 0;
-
-        const newRating = ((oldRating * oldNumRatings) + rating) / (oldNumRatings + 1);
-        // console.log(oldRating, oldNumRatings, rating, newRating)
-        const newNumRatings = oldNumRatings + 1;
-        customerToUpdate.rating = newRating;
-        customerToUpdate.numRatings = newNumRatings;
-        const updatedCustomer = await customerToUpdate.save()
-
+        
         const user = await User.findOne({firebaseUid:request.user.uid})
         const existingRatingIndex = user.ratings.findIndex(r => r.customerId.toString() === id);
 
+        let newRating
         if (existingRatingIndex !== -1) {
             // Update existing rating
+            newRating = ((oldRating * oldNumRatings) - user.ratings[existingRatingIndex].rating + rating) / oldNumRatings
             user.ratings[existingRatingIndex].rating = rating;
+            
         } else {
             // Add new rating
             user.ratings.push({ customerId: id, rating: rating });
+            newRating = ((oldRating * oldNumRatings) + rating) / (oldNumRatings + 1);
+            customerToUpdate.numRatings = oldNumRatings + 1;
         }
+        // console.log(oldRating, oldNumRatings, rating, newRating)
+        customerToUpdate.rating = newRating;
+        const updatedCustomer = await customerToUpdate.save()
+
+
         await user.save()
 
         reply.code(200).send({
