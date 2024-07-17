@@ -1,6 +1,10 @@
 import { fastify, BASE_URL } from "./init.js";
 import Customer from "../models/customer.js";
 
+import {getUserFromToken } from "../utils/firebase_utils.js";
+import { flagFavorites } from "../utils/db_utils.js";
+// import User from "../models/user.js";
+
 fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
     try{
         const defaultValues = {
@@ -53,21 +57,28 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
         const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const sort_on = param["sort_on"] || "createdAt"
         //specify other params here
+
         const query = {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
-
+            
             //add them in here
         }
         //if no ids specified return first 5 customers:
         let customers
         if(!ids || ids.length === 0){
-            customers = await Customer.find(query).sort({[sort_on]:-1}).limit(5).exec();
+            customers = await Customer.find(query).sort({[sort_on]:-1}).limit(5).lean().exec();
         }
         else{
-            customers = await Customer.find(query).sort({[sort_on]:-1}).exec();
+            customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
         }
         
+        const fb_user = await getUserFromToken(request);
+        if(fb_user && fb_user.role === "user"){
+            customers = await flagFavorites(fb_user.uid, customers)
+            // console.log(customers)
+        }
         // const customers = await Customer.find(query).exec();
+        
         return reply.code(200).send({
             data:customers,
             message:`Customer${ids&&ids.length>1?'s':''} found successfully`,
