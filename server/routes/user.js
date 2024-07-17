@@ -15,6 +15,7 @@ import Favorite from "../models/favorite.js";
 import { personalitySchema } from "../models/personality.js";
 
 import { verifyToken } from "../utils/firebase_utils.js";
+import { flagFavorites } from "../utils/db_utils.js";
 
 // import {BASE_URL} from '../server.js'
 
@@ -339,6 +340,7 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     const user = await User.findOne({ firebaseUid: request.user.uid })
       .select({compatibleCustomers:1})
       .populate("compatibleCustomers.customerId")
+      .lean()
       .exec();
     
     if (!user) {
@@ -350,12 +352,7 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
       });
       return;
     }
-    const matches = user.compatibleCustomers.map((match) => {
-      const customer = match.customerId;
-      const matchObj = customer.toObject();
-      delete matchObj._id;
-      return matchObj;
-    })
+    const matches = await flagFavorites(request.user.uid, user.compatibleCustomers.map(({customerId})=>customerId))
     reply.send({
       data: matches,
       event_code: 1,

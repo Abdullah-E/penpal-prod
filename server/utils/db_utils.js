@@ -11,9 +11,9 @@ export const flagFavorites = async (firebase_id, customers) => {
     // console.log(favoriteList)
     customers = customers.map(customer=>{
         customer.isFavorite = favoriteList.favorites.includes(customer._id);
-        console.log(customer.isFavorite)
+        // console.log(customer.isFavorite)
         return customer;
     })
-    console.log(customers)
+    // console.log(customers)
     return customers;
 }
