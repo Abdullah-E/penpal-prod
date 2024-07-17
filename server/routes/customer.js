@@ -1,8 +1,9 @@
 import { fastify, BASE_URL } from "./init.js";
 import Customer from "../models/customer.js";
 
-import {getUserFromToken } from "../utils/firebase_utils.js";
+import {getUserFromToken,verifyToken } from "../utils/firebase_utils.js";
 import { flagFavorites } from "../utils/db_utils.js";
+import User from "../models/user.js";
 // import User from "../models/user.js";
 
 fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
@@ -146,8 +147,10 @@ fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{
     }
 })
 
-fastify.post(BASE_URL + '/customer/review/test', async(request, reply)=>{
+fastify.put(BASE_URL + '/customer/review/test', async(request, reply)=>{
     try{
+        await verifyToken(request,reply);
+        
         const {id} = request.query;
         const {rating} = request.body;
         const customerToUpdate = await Customer.findOne({_id:id}).exec();
@@ -155,11 +158,24 @@ fastify.post(BASE_URL + '/customer/review/test', async(request, reply)=>{
         const oldNumRatings = customerToUpdate.numRatings || 0;
 
         const newRating = ((oldRating * oldNumRatings) + rating) / (oldNumRatings + 1);
-        console.log(oldRating, oldNumRatings, rating, newRating)
+        // console.log(oldRating, oldNumRatings, rating, newRating)
         const newNumRatings = oldNumRatings + 1;
         customerToUpdate.rating = newRating;
         customerToUpdate.numRatings = newNumRatings;
         const updatedCustomer = await customerToUpdate.save()
+
+        const user = await User.findOne({firebaseUid:request.user.uid})
+        const existingRatingIndex = user.ratings.findIndex(r => r.customerId.toString() === id);
+
+        if (existingRatingIndex !== -1) {
+            // Update existing rating
+            user.ratings[existingRatingIndex].rating = rating;
+        } else {
+            // Add new rating
+            user.ratings.push({ customerId: id, rating: rating });
+        }
+        await user.save()
+
         reply.code(200).send({
             data:updatedCustomer,
             message:"Review added successfully",

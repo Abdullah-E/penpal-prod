@@ -5,13 +5,12 @@ export async function verifyToken(request, reply) {
       !request.headers.authorization ||
       !request.headers.authorization.startsWith("Bearer ")
     ) {
-      reply.code(401).send({
+      return reply.code(401).send({
         data: null,
         event_code: 0,
         message: "Unauthorized - No token",
         status_code: 401,
       });
-      return;
     }
   
     const idToken = request.headers.authorization.split("Bearer ")[1];

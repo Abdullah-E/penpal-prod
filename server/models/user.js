@@ -113,7 +113,15 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Favorite'
     
-    }
+    },
+    ratings :[{
+        rating: Number,
+        customerId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Customer'
+        }
+    }]
+    
 
 })
 
@@ -132,7 +140,7 @@ userSchema.pre('save', async function(next) {
         compatibilityScores.sort((a, b) => b.score - a.score);
         this.compatibleCustomers = compatibilityScores.slice(0, 5);
     }
-    console.log('pre save', this.firstName, this.profileComplete)
+    // console.log('pre save', this.firstName, this.profileComplete)
     next();
 });
 
