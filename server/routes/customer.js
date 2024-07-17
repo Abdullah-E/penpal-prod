@@ -148,7 +148,7 @@ fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{
     }
 })
 
-fastify.put(BASE_URL + '/customer/review/test', async(request, reply)=>{
+fastify.put(BASE_URL + '/customer/rate', async(request, reply)=>{
     try{
         await verifyToken(request,reply);
         
