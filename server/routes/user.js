@@ -486,9 +486,6 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
   try {
     const user = await User
     .findOne({ firebaseUid: request.user.uid })
-    .select('favorite')
-    .populate('favorite')
-    
     
     if (!user) {
       reply.status(404).send({
@@ -509,9 +506,28 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
       return;
     }
 
-    console.log(user.favorite)
+    // const favoriteList = await user.favorite.populate('favorites')
+    // const favorites = favoriteList.favorites.toObject()
+    // // console.log(favorites)
+    // favorites.forEach(favorite => {
+
+    //   favorite = favorite.toObject()
+    //   favorite.isFavorite = true
+    //   console.log(favorite)
+    //   // return favorite
+    // })
+    // console.log(favorites[0].isFavorite)
+
+    // const favorites = (await user.favorite.populate('favorites')).favorites
+    let favorites = (await (await user.populate('favorite')).favorite.populate('favorites')).favorites
+    favorites = favorites.map(favorite => {
+      favorite = favorite.toObject()
+      favorite["isFavorite"] = true
+      return favorite
+    })
+
     reply.send({
-      data: await user.favorite.populate('favorites'),
+      data: favorites,
       event_code: 1,
       message: "Favorite fetched successfully",
       status_code: 200,
