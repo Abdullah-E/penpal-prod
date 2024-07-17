@@ -425,6 +425,7 @@ fastify.put(BASE_URL + "/user/favorite", async (request, reply) => {
   try {
     const param = request.query
     const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+    const {fav:flag} = request.body
     const user = await User
     .findOne({ firebaseUid: request.user.uid })
     .select('favorite')
@@ -440,6 +441,9 @@ fastify.put(BASE_URL + "/user/favorite", async (request, reply) => {
     }
     let favorite
     if(!user.favorite){
+      if(!flag){
+        return
+      }
       favorite = await Favorite.create({
         user: user._id,
         favorites: ids
@@ -447,9 +451,17 @@ fastify.put(BASE_URL + "/user/favorite", async (request, reply) => {
       user.favorite = favorite._id
       await user.save()
     }else{
+      let query
+      console.log(flag)
+      if(flag == true){
+        query = {$addToSet:{favorites:ids}}
+      }else{
+        query = {$pull:{favorites:ids}}
+        console.log("pullin")
+      }
       favorite = await Favorite.findOneAndUpdate(
         {_id:user.favorite},
-        {$addToSet:{favorites:ids}},
+        query,
         {new:true}
       )
     }
@@ -459,7 +471,7 @@ fastify.put(BASE_URL + "/user/favorite", async (request, reply) => {
     reply.send({
       data: favorite,
       event_code: 1,
-      message: "Favorite added successfully",
+      message: "Favorites updated successfully",
       status_code: 201,
     });
   } catch (error) {
@@ -506,19 +518,6 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
       return;
     }
 
-    // const favoriteList = await user.favorite.populate('favorites')
-    // const favorites = favoriteList.favorites.toObject()
-    // // console.log(favorites)
-    // favorites.forEach(favorite => {
-
-    //   favorite = favorite.toObject()
-    //   favorite.isFavorite = true
-    //   console.log(favorite)
-    //   // return favorite
-    // })
-    // console.log(favorites[0].isFavorite)
-
-    // const favorites = (await user.favorite.populate('favorites')).favorites
     let favorites = (await (await user.populate('favorite')).favorite.populate('favorites')).favorites
     favorites = favorites.map(favorite => {
       favorite = favorite.toObject()
