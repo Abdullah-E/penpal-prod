@@ -82,13 +82,11 @@ fastify.get(BASE_URL + '/user/chat', async(request, reply)=>{
 
         chats = chats.slice(page*limit, page*limit+limit)
         reply.code(200).send({
-            data:{
-                chats:chats,
-                totalUnreadMsgs:chats.reduce((acc, chat)=>acc+chat.messages.filter(msg=>msg.unread).length, 0)
-            },
+            data:chats,
             message:"Messages retrieved successfully",
             event_code:1,
             status_code:200,
+            totalUnreadMsgs:chats.reduce((acc, chat)=>acc+chat.messages.filter(msg=>msg.unread).length, 0)
         })
 
     }catch(error){
