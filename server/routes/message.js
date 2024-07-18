@@ -61,6 +61,7 @@ fastify.get(BASE_URL + '/user/chat', async(request, reply)=>{
             // let chat = {sender: message.sender, receiver: message.receiver}
             const chatInd = chats.findIndex(chat=>chat.receiver._id.equals(message.receiver._id))
             const messageObj= {
+                _id:message._id,
                 messageText:message.messageText || "",
                 fileLink:message.fileLink || "",
                 unread:message.unread,
@@ -117,9 +118,9 @@ fastify.put(BASE_URL + '/user/chat', async(request, reply)=>{
         }
         // console.log(messageToUpdate.sender.equals(userId) )
         if(messageToUpdate.sender.equals(userId)){
-            await messageToUpdate.updateOne(messageNewFields)
+            const updatedMsg = await Message.findOneAndUpdate({_id:messageId},messageNewFields,{new:true}).lean().exec()
             reply.code(200).send({
-                data:messageToUpdate,
+                data:updatedMsg,
                 message:"Message updated successfully",
                 event_code:1,
                 status_code:200
