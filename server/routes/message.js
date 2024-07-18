@@ -45,7 +45,15 @@ fastify.get(BASE_URL + '/user/chat', async(request, reply)=>{
     try{
         // await verifyToken(request, reply)
         const {_id:sender} = await User.findOne({firebaseUid:request.user.uid}).select('_id').exec()
-
+        const {p:page=0, l:limit=100} = request.query
+        if(page<0 || limit<0){
+            return reply.code(400).send({
+                data:null,
+                message:"Invalid page or limit",
+                event_code:0,
+                status_code:400
+            })
+        }
         const foundMessages = await Message.find({sender}).populate('receiver').exec()
         let chats = []
         foundMessages.forEach((message)=>{
@@ -71,12 +79,13 @@ fastify.get(BASE_URL + '/user/chat', async(request, reply)=>{
             }
         })
 
+        chats = chats.slice(page*limit, page*limit+limit)
         reply.code(200).send({
             data:chats,
             message:"Messages retrieved successfully",
             event_code:1,
             status_code:200,
-            totalUnreadMsgs:foundMessages.filter(message=>message.unread).length
+            totalUnreadMsgs:chats.reduce((acc, chat)=>acc+chat.messages.filter(msg=>msg.unread).length, 0)
         })
 
     }catch(error){
