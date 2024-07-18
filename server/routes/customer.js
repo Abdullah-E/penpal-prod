@@ -6,6 +6,21 @@ import { flagFavorites, flagRatings } from "../utils/db_utils.js";
 import User from "../models/user.js";
 // import User from "../models/user.js";
 
+fastify.addHook('onRequest', async(request, reply)=>{
+    const isExcludedRoute = 
+    (request.routeOptions.url === BASE_URL + '/customer/test' 
+        && request.method === 'POST') ||
+    (request.routeOptions.url === BASE_URL + '/customer/random')
+
+    if( 
+        !isExcludedRoute &&
+        request.routeOptions.url &&
+        request.routeOptions.url.startsWith(BASE_URL + '/customer')
+    ){
+        await verifyToken(request, reply);
+    }
+})
+
 fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
     try{
         const defaultValues = {
@@ -71,12 +86,12 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
         // }
         // else{
         // }
-        const customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
+        let customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
         
-        const fb_user = await getUserFromToken(request);
-        if(fb_user && fb_user.role === "user"){
-            customers = await flagFavorites(fb_user.uid, customers)
-            customers = await flagRatings(fb_user.uid, customers)
+        // const fb_user = await getUserFromToken(request);
+        if(request.user && request.user.role === "user"){
+            customers = await flagFavorites(request.user.uid, customers)
+            customers = await flagRatings(request.user.uid, customers)
             // console.log(customers)
         }
         // const customers = await Customer.find(query).exec();
@@ -149,7 +164,7 @@ fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{
 
 fastify.put(BASE_URL + '/customer/rate', async(request, reply)=>{
     try{
-        await verifyToken(request,reply);
+        // await verifyToken(request,reply);
         
         const {id} = request.query;
         const {rating} = request.body;
