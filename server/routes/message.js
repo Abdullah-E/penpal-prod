@@ -47,11 +47,36 @@ fastify.get(BASE_URL + '/user/chat', async(request, reply)=>{
         const {_id:sender} = await User.findOne({firebaseUid:request.user.uid}).select('_id').exec()
 
         const foundMessages = await Message.find({sender}).populate('receiver').exec()
+        let chats = []
+        foundMessages.forEach((message)=>{
+            //if receiver in chats:
+            // let chat = {sender: message.sender, receiver: message.receiver}
+            const chatInd = chats.findIndex(chat=>chat.receiver._id.equals(message.receiver._id))
+            const messageObj= {
+                messageText:message.messageText || "",
+                fileLink:message.fileLink || "",
+                unread:message.unread,
+                haveSend:true
+            }
+            if(chatInd == -1){
+                chats.push({
+                    sender: message.sender,
+                    // receiver: message.receiver.select('name'),
+                    receiver: (({_id, firstName, lastName,profilePic=""})=>({_id, firstName, lastName,profilePic}))(message.receiver),
+                    messages: [messageObj]
+                })
+            }else{
+                chats[chatInd].messages.push(messageObj)
+            
+            }
+        })
+
         reply.code(200).send({
-            data:foundMessages,
+            data:chats,
             message:"Messages retrieved successfully",
             event_code:1,
-            status_code:200
+            status_code:200,
+            totalUnreadMsgs:foundMessages.filter(message=>message.unread).length
         })
 
     }catch(error){
