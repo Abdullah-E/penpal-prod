@@ -65,13 +65,13 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
             //add them in here
         }
         //if no ids specified return first 5 customers:
-        let customers
-        if(!ids || ids.length === 0){
-            customers = await Customer.find(query).sort({[sort_on]:-1}).limit(5).lean().exec();
-        }
-        else{
-            customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
-        }
+        // let customers
+        // if(!ids || ids.length === 0){
+        //     customers = await Customer.find(query).sort({[sort_on]:-1}).limit(5).lean().exec();
+        // }
+        // else{
+        // }
+        const customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
         
         const fb_user = await getUserFromToken(request);
         if(fb_user && fb_user.role === "user"){
