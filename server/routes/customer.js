@@ -195,3 +195,29 @@ fastify.put(BASE_URL + '/customer/rate', async(request, reply)=>{
         });
     }
 })
+
+fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
+    try{
+        const n = request.query.n || 5;
+        const customers = await Customer.aggregate([
+            {$match:{rating:{$gt:3}}},
+            {$sample:{size:parseInt(n)}}
+        ]).exec();
+
+        return reply.code(200).send({
+            data:customers,
+            message:"Random customers found successfully",
+            event_code:1,
+            status_code:200
+        })
+
+    }catch(error){
+        console.error(error)
+        reply.code(400).send({
+            message:"Customer not found",
+            event_code:0,
+            status_code:400,
+            data:null
+        });
+    }
+})

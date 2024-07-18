@@ -10,6 +10,21 @@ const EYE_TYPES = [
     "Hazel",
     "Other" ,
     ]
+const GENDER_TYPES = [
+    "Other",
+    "Male",
+    "Female"
+]
+
+const ORIENTATION_TYPES = [
+    "Other",
+    "Bi-Sexual",
+    "Gay",
+    "Lesbian",
+    "Straight",
+    "Transgender",
+    "LGBTQ+"
+]
 
 const customerSchema = new mongoose.Schema({
     firstName: {
@@ -50,7 +65,14 @@ const customerSchema = new mongoose.Schema({
     gender:{
         type:String,
         required:false,
-        default:""
+        enum:GENDER_TYPES,
+        default:GENDER_TYPES[0]
+    },
+    orientation:{
+        type:String,
+        required:false,
+        enum:ORIENTATION_TYPES,
+        default:ORIENTATION_TYPES[0]
     },
     race:{
         type:String,
