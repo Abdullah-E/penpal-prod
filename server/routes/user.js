@@ -344,6 +344,18 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     //   .populate("compatibleCustomers.customerId")
     //   .lean()
     //   .exec();
+    const user = await User.findOne({ firebaseUid: request.user.uid })
+    if (user.profileComplete == false) {
+      let matches = await Customer.find().skip(page*limit).limit(parseInt(limit)).lean().exec()
+      matches = await flagFavorites(request.user.uid, matches)
+      matches = await flagRatings(request.user.uid, matches)
+      return reply.send({
+        data: matches,
+        event_code: 1,
+        message: "Matches fetched successfully",
+        status_code: 200,
+      });
+    }
     
     const customerList = await User.aggregate([
       {$match:{firebaseUid:request.user.uid}},
