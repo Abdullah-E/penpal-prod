@@ -56,7 +56,7 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       gender: "",
       state: "",
       bio: "",
-      favorite: [],
+      imageUrl: "",
       profileComplete: false,
     });
     const userObj = user.toObject();
