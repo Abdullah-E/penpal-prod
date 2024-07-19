@@ -9,6 +9,10 @@ export const flagFavorites = async (firebase_id, customers) => {
     }
     const {favorite:favoriteList} = await user.populate("favorite")
     // console.log(favoriteList)
+    if(!favoriteList){
+        customers = customers.map(customer=>{customer.isFavorite = false; return customer;})
+        return customers;
+    }
     customers = customers.map(customer=>{
         customer.isFavorite = favoriteList.favorites.includes(customer._id);
         // console.log(customer.isFavorite)

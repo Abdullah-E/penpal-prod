@@ -130,17 +130,26 @@ const customerSchema = new mongoose.Schema({
         min:1,
         max:5
     },
+    ratingReal:{
+        type:Number,
+        required:false,
+        default:0
+    },
     numRatings:{
         type:Number,
         required:false,
         default:0
     },
-
+    profilePic:{
+        type:String,
+        required:false,
+        default:""
+    },
     createdAt: {
         type: Date,
         required: true,
         default: Date.now
-    }
+    },
 })
 
 const Customer = mongoose.model('Customer', customerSchema)

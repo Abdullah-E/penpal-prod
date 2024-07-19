@@ -44,6 +44,7 @@ fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
             personality: {},
             rating: null,
             numRatings: 0,
+            profilePic: "",
             createdAt: Date.now()
         };
         // const customer = new Customer({...defaultValues, ...request.body});
@@ -169,7 +170,9 @@ fastify.put(BASE_URL + '/customer/rate', async(request, reply)=>{
         const {id} = request.query;
         const {rating} = request.body;
         const customerToUpdate = await Customer.findOne({_id:id}).exec();
-        const oldRating = customerToUpdate.rating || 0;
+        const oldRating = customerToUpdate.ratingReal? customerToUpdate.ratingReal : 
+            (customerToUpdate.rating?customerToUpdate.rating
+            :0)
         const oldNumRatings = customerToUpdate.numRatings || 0;
         
         const user = await User.findOne({firebaseUid:request.user.uid})
@@ -188,9 +191,10 @@ fastify.put(BASE_URL + '/customer/rate', async(request, reply)=>{
             customerToUpdate.numRatings = oldNumRatings + 1;
         }
         // console.log(oldRating, oldNumRatings, rating, newRating)
-        customerToUpdate.rating = newRating;
+        customerToUpdate.ratingReal = newRating;
+        //to two decimals:
+        customerToUpdate.rating = newRating.toFixed(2);
         const updatedCustomer = await customerToUpdate.save()
-
 
         await user.save()
 
