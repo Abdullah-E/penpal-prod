@@ -346,7 +346,7 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     //   .exec();
     const user = await User.findOne({ firebaseUid: request.user.uid })
     if (user.profileComplete == false) {
-      let matches = await Customer.find().skip(page*limit).limit(parseInt(limit)).lean().exec()
+      let matches = await Customer.find().sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
       matches = await flagFavorites(request.user.uid, matches)
       matches = await flagRatings(request.user.uid, matches)
       return reply.send({

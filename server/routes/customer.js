@@ -21,7 +21,7 @@ fastify.addHook('onRequest', async(request, reply)=>{
     }
 })
 
-fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
+fastify.post(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const defaultValues = {
             firstName: "",
@@ -31,28 +31,50 @@ fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
             city: "",
             state: "",
             zipcode: "",
-            gender: "",
+            gender: "Other",
+            orientation: "Other",
             race: "",
             education: "",
             age: "",
             dateOfBirth: new Date(0),
             height: "",
             weight: "",
-            hairColor: "",
-            eyeColor: "",
+            hairColor: "Other",
+            eyeColor: "Other",
             profileComplete: false,
             personality: {},
             rating: null,
             numRatings: 0,
             profilePic: "",
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            profileApproved: false,
         };
         // const customer = new Customer({...defaultValues, ...request.body});
         // console.log(customer)
         // const customer = new Customer(request.body);
-        const newUser = await Customer.create({...defaultValues, ...request.body});
+        
+        
+        const newCust = await Customer.create({...defaultValues, ...request.body});
+        // const update = await User.findOneAndUpdate(
+        //     { firebaseUid: request.user.uid },
+        //     {
+        //       $push: { createdCustomers: { $each: [newCust._id] } },
+        //       $setOnInsert: { createdCustomers: [] }
+        //     },
+        //     { upsert: true, new: true }
+        //   ).exec();
+
+        const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+        if(!user.createdCustomers){
+            user.createdCustomers = [newCust._id]
+        }else{
+            user.createdCustomers.push(newCust._id)
+        }
+        console.log(user)
+        await user.save()
+        // await User.findOneAndUpdate({firebaseUid:request.user.uid}, user).exec()
         return reply.code(201).send({
-            data:newUser,
+            data:newCust,
             message:"Customer created successfully",
             event_code:1,
             status_code:201
@@ -67,6 +89,7 @@ fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
         });
     }
 })
+
 fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
     try{
         //id could be string or array of strings
@@ -80,13 +103,6 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
             
             //add them in here
         }
-        //if no ids specified return first 5 customers:
-        // let customers
-        // if(!ids || ids.length === 0){
-        //     customers = await Customer.find(query).sort({[sort_on]:-1}).limit(5).lean().exec();
-        // }
-        // else{
-        // }
         let customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
         
         // const fb_user = await getUserFromToken(request);
