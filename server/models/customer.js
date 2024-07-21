@@ -26,6 +26,28 @@ const ORIENTATION_TYPES = [
     "LGBTQ+"
 ]
 
+const RACE_TYPES= [
+    "Other",
+    "American Indian/Alaskan Native",
+    "Asian American",
+    "Black/African American",
+    "Hispanic/Latino American",
+    "Native Hawaiian/Pacific Islander",
+    "White",
+    "Multiracial",
+]
+
+const EDUCATION_TYPES = [
+    "Other",
+    "Less than HS Diploma or GED",
+    "HS Diploma or GED",
+    "Trade Certification",
+    "Associates degree",
+    "Bachelors degree",
+    "Masters degree",
+    "Doctorate",
+]
+
 const customerSchema = new mongoose.Schema({
     firstName: {
         type: String,
@@ -77,12 +99,14 @@ const customerSchema = new mongoose.Schema({
     race:{
         type:String,
         required:false,
-        default:""
+        enum:RACE_TYPES,
+        default:RACE_TYPES[0]
     },
     education:{
         type:String,
         required:false,
-        default:""
+        enum:EDUCATION_TYPES,
+        default:EDUCATION_TYPES[0]
     },
     age:{
         type:String,

@@ -1,10 +1,9 @@
 import { fastify, BASE_URL } from "./init.js";
 import Customer from "../models/customer.js";
 
-import {getUserFromToken,verifyToken } from "../utils/firebase_utils.js";
+import {getUserFromToken, verifyToken } from "../utils/firebase_utils.js";
 import { flagFavorites, flagRatings } from "../utils/db_utils.js";
 import User from "../models/user.js";
-// import User from "../models/user.js";
 
 fastify.addHook('onRequest', async(request, reply)=>{
     const isExcludedRoute = 
@@ -44,6 +43,7 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
             profileComplete: false,
             personality: {},
             rating: null,
+            ratingReal: null,
             numRatings: 0,
             profilePic: "",
             createdAt: Date.now(),
