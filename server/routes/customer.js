@@ -59,6 +59,9 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
                 fieldsFromRequest[field] = request.body[field]
             }
             fieldsFromRequest[field] = Array.isArray(request.body[field]) ? request.body[field][0] : request.body[field]
+            fieldsFromRequest[field] = fieldsFromRequest[field] === undefined || 
+            fieldsFromRequest[field] === "" ? 
+                defaultValues[field] : fieldsFromRequest[field]
         })
         console.log(fieldsFromRequest)
         const newCust = await Customer.create({...defaultValues, ...fieldsFromRequest});
