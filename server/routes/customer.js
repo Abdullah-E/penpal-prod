@@ -1,9 +1,10 @@
 import { fastify, BASE_URL } from "./init.js";
 import Customer from "../models/customer.js";
-
-import {getUserFromToken, verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings } from "../utils/db_utils.js";
 import User from "../models/user.js";
+import CustomerUpdate from "../models/customerUpdates.js";
+
+import {verifyToken } from "../utils/firebase_utils.js";
+import { flagFavorites, flagRatings } from "../utils/db_utils.js";
 
 fastify.addHook('onRequest', async(request, reply)=>{
     const isExcludedRoute = 
@@ -49,21 +50,7 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
             createdAt: Date.now(),
             profileApproved: false,
         };
-        // const customer = new Customer({...defaultValues, ...request.body});
-        // console.log(customer)
-        // const customer = new Customer(request.body);
-        
-        
         const newCust = await Customer.create({...defaultValues, ...request.body});
-        // const update = await User.findOneAndUpdate(
-        //     { firebaseUid: request.user.uid },
-        //     {
-        //       $push: { createdCustomers: { $each: [newCust._id] } },
-        //       $setOnInsert: { createdCustomers: [] }
-        //     },
-        //     { upsert: true, new: true }
-        //   ).exec();
-
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
         if(!user.createdCustomers){
             user.createdCustomers = [newCust._id]
@@ -90,7 +77,7 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
     }
 })
 
-fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
+fastify.get(BASE_URL + '/customer', async(request, reply)=>{
     try{
         //id could be string or array of strings
         const param = request.query
@@ -130,13 +117,36 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
     }
 })
 
-fastify.put(BASE_URL + '/customer/test', async(request, reply)=>{
+fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const {id} = request.query
-        const customerToUpdate = await Customer.findOneAndUpdate({_id:id}, request.body, {new:true}).lean().exec()
+        // const customerToUpdate = await Customer.findOneAndUpdate({_id:id}, request.body, {new:true}).lean().exec()
+        // const user = await User.findOne({firebaseUid:request.user.uid})
+        const newUpdate = new CustomerUpdate({
+            
+            updateApproved:false
+        })
+        // await Customer.updateOne(
+        //     {_id:id}, {$push:{customerUpdates:newUpdate._id}, new:true}
+        // )
+        // const updatedCustomer = await Customer.findOne({_id:id}).lean().exec()
+        const updatedCustomer = await Customer.findOneAndUpdate(
+            {_id:id}, {$push:{customerUpdates:newUpdate._id}}, {new:true}
+        ).lean()
+        const userUpdate = await User.findOneAndUpdate(
+            {firebaseUid:request.user.uid}, {$push:{customerUpdates:newUpdate._id}}
+        )
+        newUpdate.customer = id
+        newUpdate.user = userUpdate._id
+        const {_id, ...rest} = updatedCustomer
+        console.log(rest)
+        const newBody = {...rest, ...request.body}
+        newUpdate.newBody = newBody
+        await newUpdate.save()
+
         reply.code(200).send({
-            data:customerToUpdate,
-            message:"Customer updated successfully",
+            data:newUpdate,
+            message:"Customer update requested successfully",
             event_code:1,
             status_code:200
         });
@@ -148,7 +158,7 @@ fastify.put(BASE_URL + '/customer/test', async(request, reply)=>{
             status_code:400,
             data:null
         });
-    }      
+    }
 })
 
 fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{

@@ -174,6 +174,10 @@ const customerSchema = new mongoose.Schema({
         required: true,
         default: Date.now
     },
+    customerUpdates: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CustomerUpdates'
+    }],
 })
 
 const Customer = mongoose.model('Customer', customerSchema)

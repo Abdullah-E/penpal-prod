@@ -124,9 +124,11 @@ const userSchema = new mongoose.Schema({
     createdCustomers :{
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'Customer'
-    }
-    
-
+    },
+    customerUpdates:{
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'CustomerUpdate'
+    },
 })
 
 userSchema.pre('save', async function(next) {
