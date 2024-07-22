@@ -50,7 +50,18 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
             createdAt: Date.now(),
             profileApproved: false,
         };
-        const newCust = await Customer.create({...defaultValues, ...request.body});
+
+        //some fields in request.body can be arrays, need to get the first element from them:
+        const fields = Object.keys(request.body)
+        const fieldsFromRequest = {}
+        fields.forEach(field => {
+            if(field === "customerUpdates"){
+                fieldsFromRequest[field] = request.body[field]
+            }
+            fieldsFromRequest[field] = Array.isArray(request.body[field]) ? request.body[field][0] : request.body[field]
+        })
+        console.log(fieldsFromRequest)
+        const newCust = await Customer.create({...defaultValues, ...fieldsFromRequest});
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
         if(!user.createdCustomers){
             user.createdCustomers = [newCust._id]
