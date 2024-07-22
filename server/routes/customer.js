@@ -1,5 +1,5 @@
 import { fastify, BASE_URL } from "./init.js";
-import Customer from "../models/customer.js";
+import Customer, {customerDefaultValues} from "../models/customer.js";
 import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdates.js";
 
@@ -23,55 +23,30 @@ fastify.addHook('onRequest', async(request, reply)=>{
 
 fastify.post(BASE_URL + '/customer', async(request, reply)=>{
     try{
-        const defaultValues = {
-            firstName: "",
-            lastName: "",
-            inmateNumber: "",
-            mailingAddress: "",
-            city: "",
-            state: "",
-            zipcode: "",
-            gender: "Other",
-            orientation: "Other",
-            race: "",
-            education: "Other",
-            age: "",
-            dateOfBirth: new Date(0),
-            height: "",
-            weight: "",
-            hairColor: "Other",
-            eyeColor: "Other",
-            profileComplete: false,
-            personality: {},
-            rating: null,
-            ratingReal: null,
-            numRatings: 0,
-            profilePic: "",
-            createdAt: Date.now(),
-            profileApproved: false,
-        };
+        
 
         //some fields in request.body can be arrays, need to get the first element from them:
         const fields = Object.keys(request.body)
         const fieldsFromRequest = {}
         fields.forEach(field => {
-            if(field === "customerUpdates"){
+            if(field === "customerUpdates" || field === "spokenLanguages"){
+                // console.log("skipping", field)
                 fieldsFromRequest[field] = request.body[field]
+                return
             }
             fieldsFromRequest[field] = Array.isArray(request.body[field]) ? request.body[field][0] : request.body[field]
             fieldsFromRequest[field] = fieldsFromRequest[field] === undefined || 
             fieldsFromRequest[field] === "" ? 
-                (defaultValues[field]?defaultValues[field]:"" ): fieldsFromRequest[field]
+                (customerDefaultValues[field]?customerDefaultValues[field]:"" ): fieldsFromRequest[field]
         })
-        console.log(fieldsFromRequest)
-        const newCust = await Customer.create({...defaultValues, ...fieldsFromRequest});
+        // console.log(fieldsFromRequest)
+        const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
         if(!user.createdCustomers){
             user.createdCustomers = [newCust._id]
         }else{
             user.createdCustomers.push(newCust._id)
         }
-        console.log(user)
         await user.save()
         // await User.findOneAndUpdate({firebaseUid:request.user.uid}, user).exec()
         return reply.code(201).send({
@@ -137,7 +112,6 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         // const customerToUpdate = await Customer.findOneAndUpdate({_id:id}, request.body, {new:true}).lean().exec()
         // const user = await User.findOne({firebaseUid:request.user.uid})
         const newUpdate = new CustomerUpdate({
-            
             updateApproved:false
         })
         // await Customer.updateOne(
@@ -152,10 +126,9 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         )
         newUpdate.customer = id
         newUpdate.user = userUpdate._id
+
         const {_id, ...rest} = updatedCustomer
-        console.log(rest)
-        const newBody = {...rest, ...request.body}
-        newUpdate.newBody = newBody
+        newUpdate.newBody = {...rest, ...request.body}
         await newUpdate.save()
 
         reply.code(200).send({
@@ -260,7 +233,8 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
         const n = request.query.n || 5;
         const customers = await Customer.aggregate([
             {$match:{rating:{$gt:3}}},
-            {$sample:{size:parseInt(n)}}
+            {$project:{_id:0, firstName:1, lastName:1, rating:1, profilePic:1}},
+            {$sample:{size:parseInt(n)}},
         ]).exec();
 
         return reply.code(200).send({
