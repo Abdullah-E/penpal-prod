@@ -34,7 +34,7 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
             gender: "Other",
             orientation: "Other",
             race: "",
-            education: "",
+            education: "Other",
             age: "",
             dateOfBirth: new Date(0),
             height: "",
@@ -61,7 +61,7 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
             fieldsFromRequest[field] = Array.isArray(request.body[field]) ? request.body[field][0] : request.body[field]
             fieldsFromRequest[field] = fieldsFromRequest[field] === undefined || 
             fieldsFromRequest[field] === "" ? 
-                defaultValues[field] : fieldsFromRequest[field]
+                (defaultValues[field]?defaultValues[field]:"" ): fieldsFromRequest[field]
         })
         console.log(fieldsFromRequest)
         const newCust = await Customer.create({...defaultValues, ...fieldsFromRequest});
@@ -83,7 +83,7 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
     }catch(error){
         console.error(error)
         return reply.code(400).send({
-            message:"Customer not created",
+            message:`Customer not created: ${error}`,
             event_code:0,
             status_code:400,
             data:null
