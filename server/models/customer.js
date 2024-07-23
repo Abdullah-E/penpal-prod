@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
 import { personalitySchema } from "./personality.js";
 
-const HAIR_TYPES = ["Bald", "Black", "Blonde", "Brown", "Gray", "Red", "Salt and Pepper", "Other"]
+const HAIR_TYPES = ["", "Bald", "Black", "Blonde", "Brown", "Gray", "Red", "Salt and Pepper", "Other"]
 const EYE_TYPES = [
+    "",
     "Black" ,
     "Blue" ,
     "Brown" ,
@@ -17,6 +18,7 @@ const GENDER_TYPES = [
 ]
 
 const ORIENTATION_TYPES = [
+    "",
     "Other",
     "Bi-Sexual",
     "Gay",
@@ -27,6 +29,7 @@ const ORIENTATION_TYPES = [
 ]
 
 const RACE_TYPES = [
+    "",
     "Other",
     "American Indian/Alaskan Native",
     "Asian American",
@@ -38,6 +41,7 @@ const RACE_TYPES = [
 ]
 
 const EDUCATION_TYPES = [
+    "",
     "Other",
     "Less than HS Diploma or GED",
     "HS Diploma or GED",
@@ -343,16 +347,16 @@ export const customerDefaultValues = {
     city: "",
     state: "",
     zipcode: "",
-    gender: "Other",
-    orientation: "Other",
-    race: "Other",
-    education: "Other",
+    gender: "",
+    orientation: "",
+    race: "",
+    education: "",
     age: "",
     dateOfBirth: new Date(0),
     height: "",
     weight: "",
-    hairColor: "Other",
-    eyeColor: "Other",
+    hairColor: "",
+    eyeColor: "",
     religiousPref: "",
     bodyType: "",
     astrologicalSign: "",
