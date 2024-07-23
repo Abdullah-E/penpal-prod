@@ -329,10 +329,10 @@ const customerSchema = new mongoose.Schema({
         required: true,
         default: Date.now
     },
-    customerUpdates: [{
+    customerUpdate: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CustomerUpdates'
-    }],
+    },
 })
 
 export const customerDefaultValues = {

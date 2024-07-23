@@ -1,7 +1,7 @@
 import { fastify, BASE_URL } from "./init.js";
 import Customer, {customerDefaultValues} from "../models/customer.js";
 import User from "../models/user.js";
-import CustomerUpdate from "../models/customerUpdates.js";
+import CustomerUpdate from "../models/customerUpdate.js";
 
 import {verifyToken } from "../utils/firebase_utils.js";
 import { flagFavorites, flagRatings } from "../utils/db_utils.js";
@@ -25,7 +25,7 @@ const parseCustomerInfo = (body) => {
     const fields = Object.keys(body)
     const customer = {}
     fields.forEach(field => {
-        if(field === "customerUpdates" || field === "spokenLanguages"){
+        if(field === "spokenLanguages"){
             // console.log("skipping", field)
             customer[field] = body[field]
             return
@@ -125,15 +125,11 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
 fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const {id} = request.query
-        // const customerToUpdate = await Customer.findOneAndUpdate({_id:id}, request.body, {new:true}).lean().exec()
-        // const user = await User.findOne({firebaseUid:request.user.uid})
+        
         const newUpdate = new CustomerUpdate({
             updateApproved:false
         })
-        // await Customer.updateOne(
-        //     {_id:id}, {$push:{customerUpdates:newUpdate._id}, new:true}
-        // )
-        // const updatedCustomer = await Customer.findOne({_id:id}).lean().exec()
+
         const updatedCustomer = await Customer.findOneAndUpdate(
             {_id:id}, {$push:{customerUpdates:newUpdate._id}}, {new:true}
         ).lean()
@@ -269,4 +265,15 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
             data:null
         });
     }
+})
+
+fastify.delete(BASE_URL + '/customer/allupdates', async(request, reply)=>{
+    const customers = await Customer.find().lean().exec()
+    //remove the field customer updates from all customers
+    customers.forEach(async customer => {
+        if(customer.customerUpdates){
+            delete customer.customerUpdates
+        }
+        await customer.save()
+    })
 })

@@ -2,7 +2,7 @@ import { fastify, BASE_URL } from "./init.js";
 
 import User from "../models/user.js";
 import Customer from "../models/customer.js";
-import CustomerUpdate from "../models/customerUpdates.js";
+import CustomerUpdate from "../models/customerUpdate.js";
 import { getUserFromToken } from "../utils/firebase_utils.js";
 
 fastify.addHook("onRequest", async (request, reply) => {
@@ -29,14 +29,61 @@ fastify.addHook("onRequest", async (request, reply) => {
 })
 
 fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
-    const approvedBool = request.query.approved === "true"?true:false
+    try{
+        const approvedBool = request.query.approved === "true"?true:false
+        
+        const customers = await Customer.find({profileApproved:approvedBool}).exec();
+        reply.send({
+            data: customers,
+            message: `${approvedBool?'':'un'}approved customers found successfully`,
+            event_code: 1,
+            status_code: 200
+        })
+    }
+    catch(err){
+        reply.code(500).send({
+            data:null,
+            message:err.message,
+            status_code:500,
+            event_code:0
+        })
+    }
+})
+
+fastify.put(BASE_URL+"/admin/approve-customer", async (request, reply) => {
+    try{
+        const param = request.query
+        const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const query = {
+            ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+        }
     
-   
-    const customers = await Customer.find({profileApproved:approvedBool}).exec();
+        const customers = await Customer.updateMany(query, {profileApproved:true}, {new:true}).lean().exec()
+        reply.send({
+            data: customers,
+            message: `Customers approved successfully`,
+            event_code: 1,
+            status_code: 200
+        })
+    }
+    catch(err){
+        reply.code(500).send({
+            data:null,
+            message:err.message,
+            status_code:500,
+            event_code:0
+        })
+    }
+})
+
+fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
+    const {id} = request.query;
+    const updates = await CustomerUpdate.find({_id:id,updateApproved:false}).exec();
     reply.send({
-        data: customers,
-        message: `${approvedBool?'':'un'}approved customers found successfully`,
+        data: updates,
+        message: `Unapproved updates found successfully`,
         event_code: 1,
         status_code: 200
-    });
+    })
 })
+
