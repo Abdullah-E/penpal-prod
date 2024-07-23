@@ -126,15 +126,20 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const {id} = request.query
         
-        const newUpdate = new CustomerUpdate({
-            updateApproved:false
-        })
+        const customerToUpdate = await Customer.findOne({_id:id}).lean().exec();
+        let newUpdate
+        if(customerToUpdate.customerUpdate && customerToUpdate.customerUpdate !== ""){
+            newUpdate=await CustomerUpdate.findOne({_id:customerToUpdate.customerUpdate}).exec()
 
-        const updatedCustomer = await Customer.findOneAndUpdate(
-            {_id:id}, {$push:{customerUpdates:newUpdate._id}}, {new:true}
-        ).lean()
+        }else{
+            newUpdate = new CustomerUpdate({
+                updateApproved:false
+            })
+            customerToUpdate.customerUpdate = newUpdate._id
+            customerToUpdate.save()
+        }
         const userUpdate = await User.findOneAndUpdate(
-            {firebaseUid:request.user.uid}, {$push:{customerUpdates:newUpdate._id}}
+            {firebaseUid:request.user.uid}, {$addToSet:{customerUpdates:newUpdate._id}}
         )
         newUpdate.customer = id
         newUpdate.user = userUpdate._id
