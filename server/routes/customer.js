@@ -126,25 +126,26 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const {id} = request.query
         
-        const customerToUpdate = await Customer.findOne({_id:id}).lean().exec();
+        const customerToUpdate = await Customer.findOne({_id:id}).exec();
         let newUpdate
         if(customerToUpdate.customerUpdate && customerToUpdate.customerUpdate !== ""){
             newUpdate=await CustomerUpdate.findOne({_id:customerToUpdate.customerUpdate}).exec()
+            // console.log(newUpdate)
 
         }else{
             newUpdate = new CustomerUpdate({
                 updateApproved:false
             })
             customerToUpdate.customerUpdate = newUpdate._id
-            customerToUpdate.save()
+            await customerToUpdate.save()
         }
         const userUpdate = await User.findOneAndUpdate(
-            {firebaseUid:request.user.uid}, {$addToSet:{customerUpdates:newUpdate._id}}
+            {firebaseUid:request.user.uid}, {$addToSet:{customerUpdates:newUpdate._id}}, {new:true}
         )
         newUpdate.customer = id
         newUpdate.user = userUpdate._id
 
-        const {_id, ...rest} = updatedCustomer
+        const {_id, ...rest} = customerToUpdate
         newUpdate.newBody = {...rest, ...parseCustomerInfo(request.body)}
         await newUpdate.save()
 
@@ -273,12 +274,12 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
 })
 
 fastify.delete(BASE_URL + '/customer/allupdates', async(request, reply)=>{
-    const customers = await Customer.find().lean().exec()
+    const customers = await Customer.updateMany({}, {$unset:{customerUpdates:1}}, {multi:true}).exec()
     //remove the field customer updates from all customers
-    customers.forEach(async customer => {
-        if(customer.customerUpdates){
-            delete customer.customerUpdates
-        }
-        await customer.save()
+    return reply.send({
+        data:customers,
+        message:"All customer updates removed",
+        event_code:1,
+        status_code:200
     })
 })
