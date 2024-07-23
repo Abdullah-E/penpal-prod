@@ -31,9 +31,9 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         fields.forEach(field => {
             if(field === "customerUpdates" || field === "spokenLanguages"){
                 // console.log("skipping", field)
-                fieldsFromRequest[field] = request.body[field]
-                return
-            }
+            customer[field] = body[field]
+            return
+        }
         customer[field] = Array.isArray(body[field]) ? body[field][0] : body[field]
         customer[field] = customer[field] === undefined || 
         customer[field] === "" ? 
