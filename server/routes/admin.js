@@ -1,12 +1,12 @@
-import User from "../models/user";
-import Customer from "../models/customer";
-import CustomerUpdate from "../models/customerUpdates";
-import { BASE_URL, fastify } from "./init";
-import { getUserFromToken } from "../utils/firebase_utils";
+import { fastify, BASE_URL } from "./init.js";
 
+import User from "../models/user.js";
+import Customer from "../models/customer.js";
+import CustomerUpdate from "../models/customerUpdates.js";
+import { getUserFromToken } from "../utils/firebase_utils.js";
 
 fastify.addHook("onRequest", async (request, reply) => {
-    if (request.routeOptions.url.startsWith(BASE_URL+"/admin")){
+    if (request.routeOptions.url && request.routeOptions.url.startsWith(BASE_URL+"/admin")){
         const fb_user = await getUserFromToken(request, reply);
         if (!fb_user) {
             return reply.code(403).send({
@@ -25,19 +25,18 @@ fastify.addHook("onRequest", async (request, reply) => {
         }else{
             request.user = fb_user;
         }
-
-
     }
 })
 
-fastify.get("/admin/customer", async (request, reply) => {
-    const approved = request.query.approved;
-    const customers = await Customer.find({profileApproved: approved}).exec();
+fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
+    const approvedBool = request.query.approved === "true"?true:false
+    
+   
+    const customers = await Customer.find({profileApproved:approvedBool}).exec();
     reply.send({
         data: customers,
-        message: `${approved?'':'un'}approved customers found successfully`,
+        message: `${approvedBool?'':'un'}approved customers found successfully`,
         event_code: 1,
         status_code: 200
     });
-
 })

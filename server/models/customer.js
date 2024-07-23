@@ -288,8 +288,12 @@ const customerSchema = new mongoose.Schema({
         required:false,
         default:""
     },
-
     profileComplete:{
+        type:Boolean,
+        required:true,
+        default:false
+    },
+    profileApproved:{
         type:Boolean,
         required:true,
         default:false
