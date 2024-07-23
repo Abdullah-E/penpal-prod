@@ -56,7 +56,7 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       gender: "",
       state: "",
       bio: "",
-      favorite: [],
+      imageUrl: "",
       profileComplete: false,
     });
     const userObj = user.toObject();
@@ -338,12 +338,18 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
   }
   try {
     const {p:page, l:limit} = request.query;
-
-    // const user = await User.findOne({ firebaseUid: request.user.uid })
-    //   .select({compatibleCustomers:1})
-    //   .populate("compatibleCustomers.customerId")
-    //   .lean()
-    //   .exec();
+    const user = await User.findOne({ firebaseUid: request.user.uid })
+    if (user.profileComplete == false) {
+      let matches = await Customer.find().sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
+      matches = await flagFavorites(request.user.uid, matches)
+      matches = await flagRatings(request.user.uid, matches)
+      return reply.send({
+        data: matches,
+        event_code: 1,
+        message: "Matches fetched successfully",
+        status_code: 200,
+      });
+    }
     
     const customerList = await User.aggregate([
       {$match:{firebaseUid:request.user.uid}},
@@ -378,6 +384,47 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     });
   }
 });
+
+fastify.get(BASE_URL + "/user/created-customers", async (request, reply) => {
+  if (!request.user) {
+    reply.code(401).send({
+      data: null,
+      event_code: 0,
+      message: "Unauthorized",
+      status_code: 401,
+    });
+    return;
+  }
+  try {
+    const customerList = await User.aggregate([
+      {$match:{firebaseUid:request.user.uid}},
+      {$project:{createdCustomers:1,_id:0}},
+      {$lookup:{
+        from:"customers",
+        localField:"createdCustomers",
+        foreignField:"_id",
+        as:"createdCustomers"
+      }},
+      {$unwind:"$createdCustomers"},
+      {$replaceRoot:{newRoot:"$createdCustomers"}}
+    ]).exec()
+
+    reply.send({
+      data: customerList,
+      event_code: 1,
+      message: "Created customers fetched successfully",
+      status_code: 200,
+    })
+  } catch (error) {
+    console.error(error);
+    return reply.status(500).send({
+      data: null,
+      event_code: 0,
+      message: error._message || error.message || error.name,
+      status_code: 500,
+    });
+  }
+})
 
 fastify.put(BASE_URL + "/user/profile-picture", async (request, reply) => {
   if (!request.user) {

@@ -1,10 +1,10 @@
 import { fastify, BASE_URL } from "./init.js";
-import Customer from "../models/customer.js";
-
-import {getUserFromToken,verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings } from "../utils/db_utils.js";
+import Customer, {customerDefaultValues} from "../models/customer.js";
 import User from "../models/user.js";
-// import User from "../models/user.js";
+import CustomerUpdate from "../models/customerUpdate.js";
+
+import {verifyToken } from "../utils/firebase_utils.js";
+import { flagFavorites, flagRatings } from "../utils/db_utils.js";
 
 fastify.addHook('onRequest', async(request, reply)=>{
     const isExcludedRoute = 
@@ -21,38 +21,43 @@ fastify.addHook('onRequest', async(request, reply)=>{
     }
 })
 
-fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
+const parseCustomerInfo = (body) => {
+    const fields = Object.keys(body)
+    const customer = {}
+    fields.forEach(field => {
+        if(field === "spokenLanguages"){
+            // console.log("skipping", field)
+            customer[field] = body[field]
+            return
+        }
+        customer[field] = Array.isArray(body[field]) ? body[field][0] : body[field]
+        customer[field] = customer[field] === undefined || 
+        customer[field] === "" ? 
+            (customerDefaultValues[field]?customerDefaultValues[field]:"" ): customer[field]
+    })
+    return customer
+
+}
+
+fastify.post(BASE_URL + '/customer', async(request, reply)=>{
     try{
-        const defaultValues = {
-            firstName: "",
-            lastName: "",
-            inmateNumber: "",
-            mailingAddress: "",
-            city: "",
-            state: "",
-            zipcode: "",
-            gender: "",
-            race: "",
-            education: "",
-            age: "",
-            dateOfBirth: new Date(0),
-            height: "",
-            weight: "",
-            hairColor: "",
-            eyeColor: "",
-            profileComplete: false,
-            personality: {},
-            rating: null,
-            numRatings: 0,
-            profilePic: "",
-            createdAt: Date.now()
-        };
-        // const customer = new Customer({...defaultValues, ...request.body});
-        // console.log(customer)
-        // const customer = new Customer(request.body);
-        const newUser = await Customer.create({...defaultValues, ...request.body});
+        
+
+        //some fields in request.body can be arrays, need to get the first element from them:
+        // const fields = Object.keys(request.body)
+        const fieldsFromRequest = parseCustomerInfo(request.body)
+        // console.log(fieldsFromRequest)
+        const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
+        const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+        if(!user.createdCustomers){
+            user.createdCustomers = [newCust._id]
+        }else{
+            user.createdCustomers.push(newCust._id)
+        }
+        await user.save()
+        // await User.findOneAndUpdate({firebaseUid:request.user.uid}, user).exec()
         return reply.code(201).send({
-            data:newUser,
+            data:newCust,
             message:"Customer created successfully",
             event_code:1,
             status_code:201
@@ -60,14 +65,15 @@ fastify.post(BASE_URL + '/customer/test', async(request, reply)=>{
     }catch(error){
         console.error(error)
         return reply.code(400).send({
-            message:"Customer not created",
+            message:`Customer not created: ${error}`,
             event_code:0,
             status_code:400,
             data:null
         });
     }
 })
-fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
+
+fastify.get(BASE_URL + '/customer', async(request, reply)=>{
     try{
         //id could be string or array of strings
         const param = request.query
@@ -80,13 +86,6 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
             
             //add them in here
         }
-        //if no ids specified return first 5 customers:
-        // let customers
-        // if(!ids || ids.length === 0){
-        //     customers = await Customer.find(query).sort({[sort_on]:-1}).limit(5).lean().exec();
-        // }
-        // else{
-        // }
         let customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
         
         // const fb_user = await getUserFromToken(request);
@@ -94,6 +93,15 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
             customers = await flagFavorites(request.user.uid, customers)
             customers = await flagRatings(request.user.uid, customers)
             // console.log(customers)
+        }
+
+        if(customers.length === 1){
+            return reply.code(200).send({
+                data:customers[0],
+                message:"Customer found successfully",
+                event_code:1,
+                status_code:200
+            })
         }
         // const customers = await Customer.find(query).exec();
         
@@ -114,13 +122,51 @@ fastify.get(BASE_URL + '/customer/test', async(request, reply)=>{
     }
 })
 
-fastify.put(BASE_URL + '/customer/test', async(request, reply)=>{
+fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const {id} = request.query
-        const customerToUpdate = await Customer.findOneAndUpdate({_id:id}, request.body, {new:true}).lean().exec()
+        const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
+        if(!userToUpdate.createdCustomers.includes(id)){
+            return reply.code(403).send({
+                data:null,
+                message:"Unauthorized - Not creator of customer",
+                event_code:0,
+                status_code:403
+            })
+        }
+
+
+        const customerToUpdate = await Customer.findOne({_id:id}).exec();
+        let newUpdate
+        if(customerToUpdate.customerUpdate && customerToUpdate.customerUpdate !== ""){
+            newUpdate=await CustomerUpdate.findOne({_id:customerToUpdate.customerUpdate}).exec()
+            // console.log(newUpdate)
+
+        }else{
+            newUpdate = new CustomerUpdate({
+                updateApproved:false
+            })
+            customerToUpdate.customerUpdate = newUpdate._id
+            await customerToUpdate.save()
+        }
+        // const userUpdate = await User.findOneAndUpdate(
+        //     {firebaseUid:request.user.uid}, {$addToSet:{customerUpdates:newUpdate._id}}, {new:true}
+        // )
+        if(!userToUpdate.customerUpdates.includes(newUpdate._id)){
+            userToUpdate.customerUpdates.push(newUpdate._id)
+        }
+        await userToUpdate.save()
+
+        newUpdate.customer = id
+        newUpdate.user = userToUpdate._id
+
+        // const {_id, ...rest} = customerToUpdate
+        newUpdate.newBody = parseCustomerInfo(request.body)
+        await newUpdate.save()
+
         reply.code(200).send({
-            data:customerToUpdate,
-            message:"Customer updated successfully",
+            data:newUpdate,
+            message:"Customer update requested successfully",
             event_code:1,
             status_code:200
         });
@@ -132,7 +178,7 @@ fastify.put(BASE_URL + '/customer/test', async(request, reply)=>{
             status_code:400,
             data:null
         });
-    }      
+    }
 })
 
 fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{
@@ -220,7 +266,8 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
         const n = request.query.n || 5;
         const customers = await Customer.aggregate([
             {$match:{rating:{$gt:3}}},
-            {$sample:{size:parseInt(n)}}
+            {$project:{_id:0, firstName:1, lastName:1, rating:1, profilePic:1}},
+            {$sample:{size:parseInt(n)}},
         ]).exec();
 
         return reply.code(200).send({
@@ -239,4 +286,15 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
             data:null
         });
     }
+})
+
+fastify.delete(BASE_URL + '/customer/allupdates', async(request, reply)=>{
+    const customers = await Customer.updateMany({}, {$unset:{customerUpdates:1}}, {multi:true}).exec()
+    //remove the field customer updates from all customers
+    return reply.send({
+        data:customers,
+        message:"All customer updates removed",
+        event_code:1,
+        status_code:200
+    })
 })
