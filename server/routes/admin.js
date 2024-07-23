@@ -124,15 +124,33 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
         }
     
-        const updates = await CustomerUpdate.updateMany(query, {updateApproved:true}, {new:true}).lean().exec()
+        const customersToUpdate = await Customer.find(query).exec()
+        const updatedCustomers = []
+        for(const customer of customersToUpdate){
+            const update = await CustomerUpdate.findById(customer.customerUpdate)
+            if(!update){
+                console.error("Update not found for customer", customer._id)
+                continue
+            }
+            for(const field in update.newBody){
+                customer[field] = update.newBody[field]
+            }
+            await customer.updateOne({$unset:{customerUpdate:1}})
+            delete customer._doc.customerUpdate
+            await customer.save()
+            updatedCustomers.push(customer)
+            update.updateApproved = true
+            await update.save()
+        }
         reply.send({
-            data: updates,
-            message: `Updates approved successfully`,
+            data: updatedCustomers.length === 1 ? updatedCustomers[0] : updatedCustomers,
+            message: `Update${updatedCustomers.length>1?"s":""} approved successfully`,
             event_code: 1,
             status_code: 200
         })
     }
     catch(err){
+        console.error(err)
         reply.code(500).send({
             data:null,
             message:err.message,
