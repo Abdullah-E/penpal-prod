@@ -77,13 +77,33 @@ fastify.put(BASE_URL+"/admin/approve-customer", async (request, reply) => {
 })
 
 fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
-    const {id} = request.query;
-    const updates = await CustomerUpdate.find({_id:id,updateApproved:false}).exec();
-    reply.send({
-        data: updates,
-        message: `Unapproved updates found successfully`,
-        event_code: 1,
-        status_code: 200
-    })
+    try{
+
+        const param = request.query
+        const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const approvedBool = param["approved"] === "true"?true:false
+
+        const query = {
+            ...(id && id.length > 0 ? {customer:{$in:id}} : {}),
+            ...(param["approved"]?{updateApproved:approvedBool}:{}),
+            // updateApproved:param["approved"]?approvedBool:undefined
+        }
+
+        const updates = await CustomerUpdate.find(query).populate("customer").populate("user").exec()
+        reply.send({
+            data: updates.length === 1 ? updates[0] : updates,
+            message: `Unapproved updates found successfully`,
+            event_code: 1,
+            status_code: 200
+        })
+
+    }catch(err){
+        reply.code(500).send({
+            data:null,
+            message:err.message,
+            status_code:500,
+            event_code:0
+        })
+    }
 })
 
