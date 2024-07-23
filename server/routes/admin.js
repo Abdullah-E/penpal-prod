@@ -30,9 +30,16 @@ fastify.addHook("onRequest", async (request, reply) => {
 
 fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
     try{
-        const approvedBool = request.query.approved === "true"?true:false
+        const param = request.query
+        const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const approvedBool = param["approved"] === "true"?true:false
+
+        const query = {
+            ...(id && id.length > 0 ? {_id:{$in:id}} : {}),
+            ...(param["approved"]?{profileApproved:approvedBool}:{}),
+        }
         
-        const customers = await Customer.find({profileApproved:approvedBool}).exec();
+        const customers = await Customer.find(query).exec();
         reply.send({
             data: customers,
             message: `${approvedBool?'':'un'}approved customers found successfully`,
