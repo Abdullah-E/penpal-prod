@@ -125,7 +125,17 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
 fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const {id} = request.query
-        
+        const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
+        if(!userToUpdate.createdCustomers.includes(id)){
+            return reply.code(403).send({
+                data:null,
+                message:"Unauthorized - Not creator of customer",
+                event_code:0,
+                status_code:403
+            })
+        }
+
+
         const customerToUpdate = await Customer.findOne({_id:id}).exec();
         let newUpdate
         if(customerToUpdate.customerUpdate && customerToUpdate.customerUpdate !== ""){
@@ -139,14 +149,19 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             customerToUpdate.customerUpdate = newUpdate._id
             await customerToUpdate.save()
         }
-        const userUpdate = await User.findOneAndUpdate(
-            {firebaseUid:request.user.uid}, {$addToSet:{customerUpdates:newUpdate._id}}, {new:true}
-        )
-        newUpdate.customer = id
-        newUpdate.user = userUpdate._id
+        // const userUpdate = await User.findOneAndUpdate(
+        //     {firebaseUid:request.user.uid}, {$addToSet:{customerUpdates:newUpdate._id}}, {new:true}
+        // )
+        if(!userToUpdate.customerUpdates.includes(newUpdate._id)){
+            userToUpdate.customerUpdates.push(newUpdate._id)
+        }
+        await userToUpdate.save()
 
-        const {_id, ...rest} = customerToUpdate
-        newUpdate.newBody = {...rest, ...parseCustomerInfo(request.body)}
+        newUpdate.customer = id
+        newUpdate.user = userToUpdate._id
+
+        // const {_id, ...rest} = customerToUpdate
+        newUpdate.newBody = parseCustomerInfo(request.body)
         await newUpdate.save()
 
         reply.code(200).send({

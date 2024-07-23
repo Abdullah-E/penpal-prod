@@ -89,15 +89,24 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
             // updateApproved:param["approved"]?approvedBool:undefined
         }
 
-        const updates = await CustomerUpdate.find(query).populate("customer").populate("user").exec()
+        const updates = await CustomerUpdate.find(query).populate("customer").populate("user").lean().exec()
+        const returnArr = []
+        for(const update of updates){
+            returnArr.push({
+                ...update.customer,...update.newBody,
+                updatedFields:Object.keys(update.newBody),
+            })
+        }
+
         reply.send({
-            data: updates.length === 1 ? updates[0] : updates,
+            data: returnArr,
             message: `Unapproved updates found successfully`,
             event_code: 1,
             status_code: 200
         })
 
     }catch(err){
+        console.error(err)
         reply.code(500).send({
             data:null,
             message:err.message,
@@ -107,3 +116,28 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
     }
 })
 
+fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
+    try{
+        const param = request.query
+        const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const query = {
+            ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+        }
+    
+        const updates = await CustomerUpdate.updateMany(query, {updateApproved:true}, {new:true}).lean().exec()
+        reply.send({
+            data: updates,
+            message: `Updates approved successfully`,
+            event_code: 1,
+            status_code: 200
+        })
+    }
+    catch(err){
+        reply.code(500).send({
+            data:null,
+            message:err.message,
+            status_code:500,
+            event_code:0
+        })
+    }
+})
