@@ -34,11 +34,22 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
                 fieldsFromRequest[field] = request.body[field]
                 return
             }
-            fieldsFromRequest[field] = Array.isArray(request.body[field]) ? request.body[field][0] : request.body[field]
-            fieldsFromRequest[field] = fieldsFromRequest[field] === undefined || 
-            fieldsFromRequest[field] === "" ? 
-                (customerDefaultValues[field]?customerDefaultValues[field]:"" ): fieldsFromRequest[field]
-        })
+        customer[field] = Array.isArray(body[field]) ? body[field][0] : body[field]
+        customer[field] = customer[field] === undefined || 
+        customer[field] === "" ? 
+            (customerDefaultValues[field]?customerDefaultValues[field]:"" ): customer[field]
+    })
+    return customer
+
+}
+
+fastify.post(BASE_URL + '/customer', async(request, reply)=>{
+    try{
+        
+
+        //some fields in request.body can be arrays, need to get the first element from them:
+        // const fields = Object.keys(request.body)
+        const fieldsFromRequest = parseCustomerInfo(request.body)
         // console.log(fieldsFromRequest)
         const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
@@ -137,7 +148,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         newUpdate.user = userUpdate._id
 
         const {_id, ...rest} = updatedCustomer
-        newUpdate.newBody = {...rest, ...request.body}
+        newUpdate.newBody = {...rest, ...parseCustomerInfo(request.body)}
         await newUpdate.save()
 
         reply.code(200).send({
