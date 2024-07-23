@@ -21,16 +21,12 @@ fastify.addHook('onRequest', async(request, reply)=>{
     }
 })
 
-fastify.post(BASE_URL + '/customer', async(request, reply)=>{
-    try{
-        
-
-        //some fields in request.body can be arrays, need to get the first element from them:
-        const fields = Object.keys(request.body)
-        const fieldsFromRequest = {}
-        fields.forEach(field => {
-            if(field === "customerUpdates" || field === "spokenLanguages"){
-                // console.log("skipping", field)
+const parseCustomerInfo = (body) => {
+    const fields = Object.keys(body)
+    const customer = {}
+    fields.forEach(field => {
+        if(field === "customerUpdates" || field === "spokenLanguages"){
+            // console.log("skipping", field)
             customer[field] = body[field]
             return
         }
