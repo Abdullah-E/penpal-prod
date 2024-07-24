@@ -32,6 +32,7 @@ async function startServer() {
 }
 
 //startServer();
+await mongo;
 fastify.listen(
       { host: "0.0.0.0", port: process.env.PORT || 8000 },
       function (err, address) {
@@ -43,3 +44,5 @@ fastify.listen(
         }
       }
     );
+
+import "./polling_scripts/match_updater.js"

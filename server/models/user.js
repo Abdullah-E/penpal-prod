@@ -2,6 +2,8 @@ import mongoose from "mongoose"
 import { personalitySchema } from "./personality.js"
 import Customer from "./customer.js"
 
+import { calculateCompatibility } from "../utils/db_utils.js"
+
 const USER_ROLES = ['user', 'admin']
 
 function userComplete(user){
@@ -19,21 +21,6 @@ function userComplete(user){
     return fields_to_check.every(field => user[field] !== "")
 }
 
-function calculateCompatibility(userPersonality, customerPersonality) {
-    const fields = ["hobbies", "sports", "likes", "personality", "bookGenres", "musicGenres", "movieGenres"];
-    let totalMatches = 0;
-    let totalFields = fields.length;
-
-    fields.forEach(field => {
-        if (userPersonality[field].length && customerPersonality[field].length) {
-            const intersection = userPersonality[field].filter(value => customerPersonality[field].includes(value));
-            if (intersection.length) {
-                totalMatches++;
-            }
-        }
-    });
-    return (totalMatches / totalFields) * 100;
-}
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -102,6 +89,10 @@ const userSchema = new mongoose.Schema({
         type:personalitySchema,
         required: false
     },
+    lastMatched:{
+        type: Date,
+        required: false
+    },
     compatibleCustomers: [{
         customerId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -134,8 +125,10 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function(next) {
     this.profileComplete = userComplete(this);
     if (this.isModified('personality')) {
-        const customers = await Customer.find().limit(20);
+        const customers = await Customer.find().limit(50);
         const compatibilityScores = customers.map(customer => {
+            // customer.lastMatched = new Date();
+            // await customer.save();
             return {
                 customerId: customer._id,
                 score: calculateCompatibility(this.personality, customer.personality)
