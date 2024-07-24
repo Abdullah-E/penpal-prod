@@ -5,6 +5,7 @@ const query = {
     $or:[
         {lastMatched: {$lt: new Date(new Date() - 24 * 60 * 60 * 1000)}},
         {lastMatched: {$exists: false}},
+        {lastMatched: null}
     ],
     profileApproved: true            
 }
