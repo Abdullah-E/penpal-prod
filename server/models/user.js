@@ -89,10 +89,6 @@ const userSchema = new mongoose.Schema({
         type:personalitySchema,
         required: false
     },
-    lastMatched:{
-        type: Date,
-        required: false
-    },
     compatibleCustomers: [{
         customerId: {
             type: mongoose.Schema.Types.ObjectId,

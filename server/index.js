@@ -45,4 +45,5 @@ fastify.listen(
       }
     );
 
-import "./polling_scripts/match_updater.js"
+// import "./polling_scripts/match_updater.js"
+import "./polling_scripts/tag_updater.js"

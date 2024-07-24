@@ -337,6 +337,22 @@ const customerSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CustomerUpdates'
     },
+    lastMatched:{
+        type: Date,
+        required: false
+    },
+    lastUpdated:{
+        type: Date,
+        required: false
+    },
+    tag:{
+        type: String, required: false, default: ""
+    },
+    tier:{
+        type: String,
+        required: false,
+        default: "basic"
+    },
 })
 
 export const customerDefaultValues = {
@@ -378,6 +394,10 @@ export const customerDefaultValues = {
     imageUrl: "",
     createdAt: Date.now(),
     profileApproved: false,
+    lastMatched: null,
+    lastUpdated: null,
+    tag: "",
+    tier: "basic"
 }
 
 const Customer = mongoose.model('Customer', customerSchema)
