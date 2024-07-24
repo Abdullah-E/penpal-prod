@@ -147,6 +147,7 @@ const customerSchema = new mongoose.Schema({
         required: true,
         default:""
     },
+    email:{type:String, required:false, default:""},
     city:{
         type: String,
         required: true,
@@ -360,6 +361,7 @@ export const customerDefaultValues = {
     lastName: "",
     inmateNumber: "",
     mailingAddress: "",
+    email: "",
     city: "",
     state: "",
     zipcode: "",

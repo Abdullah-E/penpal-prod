@@ -1,6 +1,6 @@
 import { fastify, BASE_URL } from "./init.js";
 
-import User from "../models/user.js";
+// import User from "../models/user.js";
 import Customer from "../models/customer.js";
 import CustomerUpdate from "../models/customerUpdate.js";
 import { getUserFromToken } from "../utils/firebase_utils.js";
@@ -65,7 +65,7 @@ fastify.put(BASE_URL+"/admin/approve-customer", async (request, reply) => {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
         }
     
-        const customers = await Customer.updateMany(query, {profileApproved:true}, {new:true}).lean().exec()
+        const customers = await Customer.updateMany(query, {profileApproved:true, createdAt:Date.now()}, {new:true}).lean().exec()
         reply.send({
             data: customers,
             message: `Customers approved successfully`,
@@ -144,6 +144,7 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
             }
             await customer.updateOne({$unset:{customerUpdate:1}})
             delete customer._doc.customerUpdate
+            customer.lastUpdated = Date.now()
             await customer.save()
             updatedCustomers.push(customer)
             update.updateApproved = true
