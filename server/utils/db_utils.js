@@ -42,3 +42,36 @@ export const flagRatings = async (firebase_id, customers) => {
     })
     return customers;   
 }
+
+export function calculateCompatibility(userPersonality, customerPersonality) {
+    const fields = ["hobbies", "sports", "likes", "personality", "bookGenres", "musicGenres", "movieGenres"];
+    let totalMatches = 0;
+    let totalFields = fields.length;
+
+    fields.forEach(field => {
+        if (userPersonality[field].length && customerPersonality[field].length) {
+            const intersection = userPersonality[field].filter(value => customerPersonality[field].includes(value));
+            if (intersection.length) {
+                totalMatches++;
+            }
+        }
+    });
+    return (totalMatches / totalFields) * 100;
+}
+
+
+export const findInsertionIndex = (array, score)=> {
+    let low = 0;
+    let high = array.length;
+  
+    while (low < high) {
+      const mid = Math.floor((low + high) / 2);
+      if (array[mid].score < score) {
+        high = mid;
+      } else {
+        low = mid + 1;
+      }
+    }
+  
+    return low;
+  }

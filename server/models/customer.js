@@ -147,6 +147,7 @@ const customerSchema = new mongoose.Schema({
         required: true,
         default:""
     },
+    email:{type:String, required:false, default:""},
     city:{
         type: String,
         required: true,
@@ -337,6 +338,22 @@ const customerSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CustomerUpdates'
     },
+    lastMatched:{
+        type: Date,
+        required: false
+    },
+    lastUpdated:{
+        type: Date,
+        required: false
+    },
+    tag:{
+        type: String, required: false, default: ""
+    },
+    tier:{
+        type: String,
+        required: false,
+        default: "basic"
+    },
 })
 
 export const customerDefaultValues = {
@@ -344,6 +361,7 @@ export const customerDefaultValues = {
     lastName: "",
     inmateNumber: "",
     mailingAddress: "",
+    email: "",
     city: "",
     state: "",
     zipcode: "",
@@ -378,6 +396,10 @@ export const customerDefaultValues = {
     imageUrl: "",
     createdAt: Date.now(),
     profileApproved: false,
+    lastMatched: null,
+    lastUpdated: null,
+    tag: "",
+    tier: "basic"
 }
 
 const Customer = mongoose.model('Customer', customerSchema)
