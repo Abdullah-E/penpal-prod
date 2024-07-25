@@ -1,12 +1,8 @@
 
 import User from '../models/user.js'
 
-export const flagFavorites = async (firebase_id, customers) => {
-    const user = await User.findOne({firebaseUid:firebase_id})
-    if(!user){
-        console.log(`User ${firebase_id} not found in database`)
-        return customers;
-    }
+export const flagFavorites = async (user, customers) => {
+
     const {favorite:favoriteList} = await user.populate("favorite")
     // console.log(favoriteList)
     if(!favoriteList){
@@ -22,12 +18,8 @@ export const flagFavorites = async (firebase_id, customers) => {
     return customers;
 }
 
-export const flagRatings = async (firebase_id, customers) => {
-    const user = await User.findOne({firebaseUid:firebase_id})
-    if(!user){
-        console.log(`User ${firebase_id} not found in database`)
-        return customers;
-    }
+export const flagRatings = async (user, customers) => {
+
     customers.map(customer=>{
         const rating = user.ratings.find(rating=>rating.customerId.equals(customer._id))
         if(rating){
@@ -41,6 +33,14 @@ export const flagRatings = async (firebase_id, customers) => {
         return customer;
     })
     return customers;   
+}
+
+export const flagCreated = async (user, customers) => {
+    customers.map(customer=>{
+        customer.createdByCurrent = user.createdCustomers.includes(customer._id)
+        return customer
+    })
+    return customers
 }
 
 export function calculateCompatibility(userPersonality, customerPersonality) {

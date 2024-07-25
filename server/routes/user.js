@@ -15,7 +15,7 @@ import Favorite from "../models/favorite.js";
 import { personalitySchema } from "../models/personality.js";
 
 import { verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings } from "../utils/db_utils.js";
+import { flagFavorites, flagRatings, flagCreated } from "../utils/db_utils.js";
 
 // import {BASE_URL} from '../server.js'
 
@@ -341,8 +341,9 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     const user = await User.findOne({ firebaseUid: request.user.uid })
     if (user.profileComplete == false) {
       let matches = await Customer.find().sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
-      matches = await flagFavorites(request.user.uid, matches)
-      matches = await flagRatings(request.user.uid, matches)
+      matches = await flagFavorites(user, matches)
+      matches = await flagRatings(user, matches)
+      matches = await flagCreated(user, matches)
       return reply.send({
         data: matches,
         event_code: 1,
@@ -580,7 +581,10 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
       favorite["isFavorite"] = true
       return favorite
     })
-    favorites = await flagRatings(request.user.uid, favorites)
+    favorites = await flagRatings(user, favorites)
+    favorites = await flagCreated(user, favorites)
+    favorites = await flagCreated(user, favorites)
+
     reply.send({
       data: favorites,
       event_code: 1,
@@ -597,7 +601,6 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
     });
   }
 })
-
 
 fastify.post(BASE_URL + "/user/login", async (request, reply) => {
   const { email, password } = request.body;
