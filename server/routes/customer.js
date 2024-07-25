@@ -266,7 +266,7 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
         const n = request.query.n || 5;
         const customers = await Customer.aggregate([
             // {$match:{rating:{$gt:3}}},
-            {$project:{_id:0, firstName:1, lastName:1, rating:1, profilePic:1, age:1, state:1, imageUrl:1}},
+            {$project:{_id:0, firstName:1, lastName:1, rating:1, profilePic:1, age:1, state:1, imageUrl:1, tag:1}},
             {$sample:{size:parseInt(n)}},
         ]).exec();
 
