@@ -1,14 +1,33 @@
 import {BASE_URL, fastify} from './init.js'
 
-import { CheckoutSession } from '../models/checkoutSessions.js'
+import User from '../models/user.js'
+import Purchase from '../models/purchase.js'
+import Product from '../models/product.js'
 
 import Stripe from 'stripe'
 
+import { verifyToken } from '../utils/firebase_utils.js'
+
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
 // console.log(process.env.STRIPE_API_KEY)
-fastify.post(BASE_URL+'/create-checkout-session', async (request, reply) => {
-    const {priceId} = request.body
+
+fastify.addHook('onRequest', async (request, reply) => {
+
+    // const isExcludedRoute = request.routeOptions.url.includes('webhook')
+    if(
     
+        request.routeOptions.url
+        && request.routeOptions.url.includes(BASE_URL + '/payment')
+    ){
+        await verifyToken(request, reply)
+    }
+    
+})
+
+fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
+    const {productName, quantity} = request.body
+    const product = await Product.findOne({name: productName})
+    const user = await User.findOne({firebaseUid:request.user.uid}).exec()
 
     const session = await stripe.checkout.sessions.create({
         ui_mode:'embedded',
@@ -16,26 +35,67 @@ fastify.post(BASE_URL+'/create-checkout-session', async (request, reply) => {
         payment_method_types: ['card'],
         line_items: [
             {
-                price: priceId,
-                quantity: 1
+                price: product.priceId,
+                quantity: parseInt(quantity)
             }
         ],
         return_url: `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`,
     })
+
+    const newPurchase = new Purchase({
+        user: user._id,
+        product: product._id,
+        sessionId: session.id,
+        quantity: quantity,
+        total: product.price * parseInt(quantity),
+        status: 'pending',
+    })
+
+    await newPurchase.save()
     console.log(session)
     reply.send({clientSecret: session.client_secret})
 
 })
 
-fastify.get(BASE_URL+'/session-status', async (request, reply) => {
-    const {sessionId} = request.query
-    const session = await stripe.checkout.sessions.retrieve(sessionId)
-    reply.send({
-        data:{
-            status: session.status,
-            customerEmail: session.customer_details.email
-        }
+fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
+    try{
+        const {session_id} = request.query
+        const session = await stripe.checkout.sessions.retrieve(session_id)
+        const purchase = await Purchase.findOne({sessionId: session_id}).exec()
+    
+        purchase.status = session.status
+        await purchase.save()
+    
+        console.log(session)
+        reply.send({
+            data:{
+                status: session.status,
+                customerEmail: session.customer_details.email
+            }
+        })
+    }
+    catch(err){
+        console.error(err)
+        reply.status(500).send({error: err.message})
+    }
+})
+
+fastify.post(BASE_URL+'/product', async (request, reply) => {
+    const {name, priceId, productId, price, currency, image, description} = request.body
+
+    const product = new Product({
+        name,
+        priceId,
+        productId,
+        price,
+        currency,
+        image,
+        description
     })
+
+    await product.save()
+
+    reply.send(product)
 })
 
 fastify.post(BASE_URL+'/webhook', async (request, reply) => {
