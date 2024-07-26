@@ -35,9 +35,13 @@ const purchaseSchema = new mongoose.Schema({
         default: Date.now,
         required: true
     },
+    paidAt:{
+        type: Date,
+        required: false
+    },
     status:{
         type: String,
-        default: 'pending',
+        default: 'open',
         required: true
     }
 })

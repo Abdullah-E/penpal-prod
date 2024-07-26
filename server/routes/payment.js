@@ -49,7 +49,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             sessionId: session.id,
             quantity: quantity,
             total: product.price * parseInt(quantity),
-            status: 'pending',
+            status: 'open',
         })
     
         await newPurchase.save()
@@ -82,6 +82,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         const purchase = await Purchase.findOne({sessionId: session_id}).exec()
     
         purchase.status = session.status
+        
         await purchase.save()
     
         console.log(session)
@@ -97,6 +98,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         if(session.status !== 'completed'){
             return
         }
+        purchase.paidAt = new Date()
         if(purchase.product == 'year_profile'){
             await Customer.updateOne({_id: purchase.customer}, {creationPaymentPending: false, status:'active'})
 

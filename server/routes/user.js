@@ -16,6 +16,7 @@ import { personalitySchema } from "../models/personality.js";
 
 import { verifyToken } from "../utils/firebase_utils.js";
 import { flagFavorites, flagRatings, flagCreated, flagUpdated } from "../utils/db_utils.js";
+import Purchase from "../models/purchase.js";
 
 // import {BASE_URL} from '../server.js'
 fastify.addHook("onRequest", async (request, reply) => {
@@ -648,6 +649,36 @@ fastify.get(BASE_URL+'/user/pending-payments', async (request, reply) => {
       event_code:1,
       message:"Payments fetched successfully",
       status_code:200
+    })
+  }
+  catch(err){
+    console.error(err)
+    return reply.status(500).send({
+      data:null,
+      event_code:0,
+      message:err.message,
+      status_code:500
+    })
+  }
+})
+
+fastify.get(BASE_URL + "/user/history-payments", async (request, reply) => {
+  try {
+
+    const {cid} = request.query
+    const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
+    const purchases = await Purchase.find({user: user._id, customer: cid, status:"completed"}).select({
+      product:1,
+      quantity:1,
+      total:1,
+      createdAt:1,
+    }).exec()
+
+    return reply.send({
+      data: purchases,
+      event_code: 1,
+      message: "Payments fetched successfully",
+      status_code: 200,
     })
   }
   catch(err){
