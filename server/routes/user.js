@@ -15,7 +15,7 @@ import Favorite from "../models/favorite.js";
 import { personalitySchema } from "../models/personality.js";
 
 import { verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings, flagCreated } from "../utils/db_utils.js";
+import { flagFavorites, flagRatings, flagCreated, flagUpdated } from "../utils/db_utils.js";
 
 // import {BASE_URL} from '../server.js'
 fastify.addHook("onRequest", async (request, reply) => {
@@ -396,7 +396,7 @@ fastify.get(BASE_URL + "/user/created-customers", async (request, reply) => {
     return;
   }
   try {
-    const customerList = await User.aggregate([
+    let customerList = await User.aggregate([
       {$match:{firebaseUid:request.user.uid}},
       {$project:{createdCustomers:1,_id:0}},
       {$lookup:{
@@ -408,7 +408,7 @@ fastify.get(BASE_URL + "/user/created-customers", async (request, reply) => {
       {$unwind:"$createdCustomers"},
       {$replaceRoot:{newRoot:"$createdCustomers"}}
     ]).exec()
-
+    customerList = await flagUpdated(customerList)
     reply.send({
       data: customerList,
       event_code: 1,
@@ -582,7 +582,7 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
     })
     favorites = await flagRatings(user, favorites)
     favorites = await flagCreated(user, favorites)
-    favorites = await flagCreated(user, favorites)
+    favorites = flagUpdated(favorites)
 
     reply.send({
       data: favorites,
