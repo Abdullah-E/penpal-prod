@@ -85,6 +85,11 @@ const userSchema = new mongoose.Schema({
         type:String,
         required: false
     },
+    imageId:{
+        type:String,
+        required: false,
+        default: ""
+    },
     personality:{
         type:personalitySchema,
         required: false

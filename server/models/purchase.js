@@ -8,6 +8,11 @@ const purchaseSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    customer:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: true
+    },
     product:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',

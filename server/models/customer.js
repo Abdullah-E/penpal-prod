@@ -126,6 +126,12 @@ const VETERAN_TYPES = [
 
 ]
 
+const STATUS_TYPES = [
+    "new",
+    "active",
+    "expired",
+]
+
 const customerSchema = new mongoose.Schema({
     firstName: {
         type: String,
@@ -303,6 +309,17 @@ const customerSchema = new mongoose.Schema({
         required:true,
         default:false
     },
+    creationPaymentPending:{
+        type:Boolean,
+        required:true,
+        default:true
+    },
+    status:{
+        type:String,
+        required:false,
+        enum:STATUS_TYPES,
+        default:STATUS_TYPES[0]
+    },
     personality:{
         type:personalitySchema,
         required:false,
@@ -329,10 +346,19 @@ const customerSchema = new mongoose.Schema({
         required:false,
         default:""
     },
+    imageId:{
+        type:String,
+        required:false,
+        default:""
+    },
     createdAt: {
         type: Date,
         required: true,
         default: Date.now
+    },
+    expiresAt:{
+        type: Date,
+        required: false
     },
     customerUpdate: {
         type: mongoose.Schema.Types.ObjectId,
@@ -394,8 +420,11 @@ export const customerDefaultValues = {
     ratingReal: null,
     numRatings: 0,
     imageUrl: "",
+    imageId: "",
     createdAt: Date.now(),
+    creationPaymentPending: true,
     profileApproved: false,
+    status: "new",
     lastMatched: null,
     lastUpdated: null,
     tag: "",

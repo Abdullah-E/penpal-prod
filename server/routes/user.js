@@ -601,6 +601,66 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
   }
 })
 
+fastify.get(BASE_URL+'/user/pending-payments', async (request, reply) => {
+  try{
+
+    const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+    // console.log(user)
+    const createdCustomers = await User.aggregate([
+      {$match:{firebaseUid:request.user.uid}},
+      {$project:{createdCustomers:1,_id:0}},
+      {$lookup:{
+        from:"customers",
+        localField:"createdCustomers",
+        foreignField:"_id",
+        as:"createdCustomers"
+      }},
+      {$unwind:"$createdCustomers"},
+      {$replaceRoot:{newRoot:"$createdCustomers"}},
+      // {$match:{status:"pending"}}
+    ]).exec()
+    //make 
+    console.log(createdCustomers)
+    let payments = []    
+
+    for(let cust of createdCustomers){
+      // const cust = createdCustomers[i]
+      const pending = cust.status === "new"
+      if(!pending) {continue}
+      let totalAmount = 0
+
+      cust.profileCreation = false
+      cust.profileRenewal = false
+
+      if(cust.status==="new"){
+        cust.profileCreation = true
+        totalAmount += 1
+      }
+      if(cust.status === "expired"){
+        cust.profileRenewal = true
+        totalAmount += 1
+      }
+      const payment = {...cust, totalAmount}
+      payments.push(payment)
+    }
+    return reply.send({
+      data:payments,
+      event_code:1,
+      message:"Payments fetched successfully",
+      status_code:200
+    })
+  }
+  catch(err){
+    console.error(err)
+    return reply.status(500).send({
+      data:null,
+      event_code:0,
+      message:err.message,
+      status_code:500
+    })
+  }
+})
+
 fastify.post(BASE_URL + "/user/login", async (request, reply) => {
   const { email, password } = request.body;
   try {

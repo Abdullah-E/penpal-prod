@@ -7,30 +7,28 @@ import Product from '../models/product.js'
 import Stripe from 'stripe'
 
 import { verifyToken } from '../utils/firebase_utils.js'
+import Customer from '../models/customer.js'
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
 // console.log(process.env.STRIPE_API_KEY)
 
 fastify.addHook('onRequest', async (request, reply) => {
-
     // const isExcludedRoute = request.routeOptions.url.includes('webhook')
     if(
-    
         request.routeOptions.url
         && request.routeOptions.url.includes(BASE_URL + '/payment')
     ){
         await verifyToken(request, reply)
     }
-    
 })
 
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
     try{
 
-        const {productName, quantity} = request.body
+        const {productName, quantity, cid} = request.body
         const product = await Product.findOne({name: productName})
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
-    
+        
         const session = await stripe.checkout.sessions.create({
             ui_mode:'embedded',
             mode: 'payment',
@@ -47,6 +45,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         const newPurchase = new Purchase({
             user: user._id,
             product: product._id,
+            customer: cid,
             sessionId: session.id,
             quantity: quantity,
             total: product.price * parseInt(quantity),
@@ -57,7 +56,8 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         console.log(session)
         reply.send({
             data:{
-                clientSecret: session.client_secret
+                clientSecret: session.client_secret,
+                status:session.status
             },
             message: 'Session created',
             status_code: 200,
@@ -87,13 +87,20 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         console.log(session)
         reply.send({
             data:{
-                status: session.status,
-                customerEmail: session.customer_details.email
+                status: session.status
+                // customerEmail: session.customer_details.email
             },
             message: 'Session retrieved',
             status_code: 200,
             event_code:1
         })
+        if(session.status !== 'completed'){
+            return
+        }
+        if(purchase.product == 'year_profile'){
+            await Customer.updateOne({_id: purchase.customer}, {creationPaymentPending: false, status:'active'})
+
+        }
     }
     catch(err){
         console.error(err)

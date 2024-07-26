@@ -42,9 +42,7 @@ const parseCustomerInfo = (body) => {
 fastify.post(BASE_URL + '/customer', async(request, reply)=>{
     try{
         
-
         //some fields in request.body can be arrays, need to get the first element from them:
-        // const fields = Object.keys(request.body)
         const fieldsFromRequest = parseCustomerInfo(request.body)
         // console.log(fieldsFromRequest)
         const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
