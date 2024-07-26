@@ -25,7 +25,7 @@ fastify.addHook('onRequest', async (request, reply) => {
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
     try{
 
-        const {productName, quantity, cid} = request.body
+        const {productName, cid} = request.body
         const product = await Product.findOne({name: productName})
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
         
@@ -36,7 +36,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             line_items: [
                 {
                     price: product.priceId,
-                    quantity: parseInt(quantity)
+                    quantity: 1
                 }
             ],
             return_url: `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`,
@@ -48,7 +48,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             customer: cid,
             sessionId: session.id,
             quantity: quantity,
-            total: product.price * parseInt(quantity),
+            total: product.price,
             status: 'open',
         })
     
