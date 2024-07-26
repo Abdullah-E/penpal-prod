@@ -20,6 +20,7 @@ const matchCustomers = async () => {
             return
         }
         console.log("matching customers", customers.length)
+        let cust_update = false
 
         const users = await User.find({role: "user", profileComplete: true})
         for(const user of users){
@@ -30,6 +31,7 @@ const matchCustomers = async () => {
                 if(existingCustomer){
                     continue
                 }
+                cust_update = true
                 const score = calculateCompatibility(user.personality, customer.personality)
                 const index = findInsertionIndex(user.compatibleCustomers, score)
                 console.log(index, score, customer._id)
@@ -45,6 +47,13 @@ const matchCustomers = async () => {
                 // console.log("User updated", user._id, user.compatibleCustomers.length
                 await user.save()
             }
+        }
+
+        if(!cust_update){
+            customers.forEach(async customer=>{
+                customer.lastMatched = new Date()
+                await customer.save()
+            })
         }
     }
     catch(err){
