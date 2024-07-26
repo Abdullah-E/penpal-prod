@@ -40,6 +40,14 @@ export const flagCreated = async (user, customers) => {
     return customers
 }
 
+export const flagUpdated = (customers) => {
+    customers.map(customer=>{
+        customer.updateApproved = !customer.customerUpdate;
+        return customer
+    })
+    return customers
+}
+
 export function calculateCompatibility(userPersonality, customerPersonality) {
     const fields = ["hobbies", "sports", "likes", "personality", "bookGenres", "musicGenres", "movieGenres"];
     let totalMatches = 0;
