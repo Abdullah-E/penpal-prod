@@ -86,7 +86,7 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             
             //add them in here
         }
-        let customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
+        let customers = await Customer.find(query).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
         
         // const fb_user = await getUserFromToken(request);
         if(request.user && request.user.role === "user"){
