@@ -100,9 +100,6 @@ fastify.post(BASE_URL+'/product', async (request, reply) => {
 
 fastify.post(BASE_URL+'/webhook', async (request, reply) => {
 
-    const sig = request.headers['stripe-signature']
-
-    let event
     console.log('Webhook received')
     console.log(request.body)
     // try{
@@ -123,5 +120,5 @@ fastify.post(BASE_URL+'/webhook', async (request, reply) => {
     //         console.log(`Unhandled event type ${event.type}`)
     // }
 
-    // reply.status(200).send({received: true})
+    reply.status(200).send({received: true})
 })

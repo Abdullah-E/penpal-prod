@@ -18,7 +18,6 @@ import { verifyToken } from "../utils/firebase_utils.js";
 import { flagFavorites, flagRatings, flagCreated } from "../utils/db_utils.js";
 
 // import {BASE_URL} from '../server.js'
-
 fastify.addHook("onRequest", async (request, reply) => {
   const isExcludedRoute =
     (request.routeOptions.url === BASE_URL + "/user" &&
@@ -338,7 +337,7 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
   }
   try {
     const {p:page, l:limit} = request.query;
-    const user = await User.findOne({ firebaseUid: request.user.uid })
+    const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
     if (user.profileComplete == false) {
       let matches = await Customer.find().sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
       matches = await flagFavorites(user, matches)
@@ -367,8 +366,8 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
       {$limit:parseInt(limit)},
     ]).exec()
     // console.log(customerList)
-    let matches = await flagFavorites(request.user.uid, customerList)
-    matches = await flagRatings(request.user.uid, matches)
+    let matches = await flagFavorites(user, customerList)
+    matches = await flagRatings(user, matches)
     reply.send({
       data: matches,
       event_code: 1,

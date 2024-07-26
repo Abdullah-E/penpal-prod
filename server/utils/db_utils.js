@@ -1,6 +1,3 @@
-
-import User from '../models/user.js'
-
 export const flagFavorites = async (user, customers) => {
 
     const {favorite:favoriteList} = await user.populate("favorite")
