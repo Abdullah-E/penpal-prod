@@ -25,35 +25,53 @@ fastify.addHook('onRequest', async (request, reply) => {
 })
 
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
-    const {productName, quantity} = request.body
-    const product = await Product.findOne({name: productName})
-    const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+    try{
 
-    const session = await stripe.checkout.sessions.create({
-        ui_mode:'embedded',
-        mode: 'payment',
-        payment_method_types: ['card'],
-        line_items: [
-            {
-                price: product.priceId,
-                quantity: parseInt(quantity)
-            }
-        ],
-        return_url: `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`,
-    })
-
-    const newPurchase = new Purchase({
-        user: user._id,
-        product: product._id,
-        sessionId: session.id,
-        quantity: quantity,
-        total: product.price * parseInt(quantity),
-        status: 'pending',
-    })
-
-    await newPurchase.save()
-    console.log(session)
-    reply.send({clientSecret: session.client_secret})
+        const {productName, quantity} = request.body
+        const product = await Product.findOne({name: productName})
+        const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+    
+        const session = await stripe.checkout.sessions.create({
+            ui_mode:'embedded',
+            mode: 'payment',
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price: product.priceId,
+                    quantity: parseInt(quantity)
+                }
+            ],
+            return_url: `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`,
+        })
+    
+        const newPurchase = new Purchase({
+            user: user._id,
+            product: product._id,
+            sessionId: session.id,
+            quantity: quantity,
+            total: product.price * parseInt(quantity),
+            status: 'pending',
+        })
+    
+        await newPurchase.save()
+        console.log(session)
+        reply.send({
+            data:{
+                clientSecret: session.client_secret
+            },
+            message: 'Session created',
+            status_code: 200,
+            event_code:1
+        })
+    }catch(err){
+        console.error(err)
+        return reply.status(500).send({
+            message: err.message,
+            data: null,
+            status_code: 500,
+            event_code: 0
+        })
+    }
 
 })
 
@@ -71,12 +89,20 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             data:{
                 status: session.status,
                 customerEmail: session.customer_details.email
-            }
+            },
+            message: 'Session retrieved',
+            status_code: 200,
+            event_code:1
         })
     }
     catch(err){
         console.error(err)
-        reply.status(500).send({error: err.message})
+        reply.status(500).send({
+            message: err.message,
+            data: null,
+            status_code: 500,
+            event_code: 0
+        })
     }
 })
 
