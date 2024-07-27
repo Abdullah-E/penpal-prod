@@ -57,7 +57,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             mode: 'payment',
             payment_method_types: ['card'],
             line_items: line_items,
-            return_url: `http://localhost:5000/payment/return?session_id={CHECKOUT_SESSION_ID}`,
+            return_url: `http://localhost:5000/payment/result?session_id={CHECKOUT_SESSION_ID}`,
         })
         for(let product of products){
 
