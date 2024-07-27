@@ -135,21 +135,18 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
                 status_code:403
             })
         }
-
-
         const customerToUpdate = await Customer.findOne({_id:id}).exec();
         let newUpdate
         if(customerToUpdate.customerUpdate){
-
             newUpdate=await CustomerUpdate.findOne({_id:customerToUpdate.customerUpdate}).exec()
             // console.log(newUpdate)
-
         }else{
             newUpdate = new CustomerUpdate({
                 updateApproved:false,
                 paymentPending:true,
             })
             customerToUpdate.customerUpdate = newUpdate._id
+            customerToUpdate.pendingPayments.update = true
             await customerToUpdate.save()
         }
         // const userUpdate = await User.findOneAndUpdate(

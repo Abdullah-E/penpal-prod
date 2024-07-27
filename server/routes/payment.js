@@ -57,7 +57,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             mode: 'payment',
             payment_method_types: ['card'],
             line_items: line_items,
-            return_url: `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`,
+            return_url: `http://localhost:3000/payment/success?session_id={CHECKOUT_SESSION_ID}`,
         })
         for(let product of products){
 
@@ -110,31 +110,45 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             event_code:1
         })
 
-        const purchase = await Purchase.findOne({sessionId: session_id}).exec()
-        purchase.status = session.status
-        
+        const purchases = await Purchase.find({sessionId: session_id}).exec()
+        // const purchase = await Purchase.findOne({sessionId: session_id}).exec()
         if(session.status !== 'completed'){
             return
         }
-        purchase.paidAt = new Date()
-        if(purchase.product === 'newProfile'){
-            await Customer.updateOne({_id: purchase.customer}, {
-                creationPaymentPending: false,
-                status:'active',
-                expiresAt: new Date(Date.now() + 30*24*60*60*1000)
-            }).exec()
-        }
-        else if(purchase.product === 'updateProfile'){
-            const custToUpdate = await Customer.findOne({_id: purchase.customer})
-            const update = await CustomerUpdate.findOne({_id: custToUpdate.customerUpdate})
-            update.paymentPending = false
-            
-            if(update.updateApproved){
-                await applyCustomerUpdate(custToUpdate, update)
+        for(const purchase of purchases){
+            purchase.status = session.status
+            purchase.paidAt = new Date()
+            const customer = await Customer.findOne({_id: purchase.customer}).exec()
+            if(purchase.product === 'creation'){
+                // await Customer.updateOne({_id: purchase.customer}, {
+                //     pendingPayments: {
+
+                //     },
+                //     status:'active',
+                //     expiresAt: new Date(Date.now() + 30*24*60*60*1000)
+                // }).exec()
+                customer.pendingPayments.creation = false
+                customer.status = 'active'
+                customer.expiresAt = new Date(Date.now() + 30*24*60*60*1000)
+
             }
-            await update.save()
+            else if(purchase.product === 'renewal'){
+                customer.pendingPayments.renewal = false
+                customer.expiresAt = new Date(customer.expiresAt.getTime() + 30*24*60*60*1000)
+                customer.status = 'active'
+            }
+            else if(purchase.product === 'update'){
+                // const custToUpdate = await Customer.findOne({_id: purchase.customer})
+                const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
+                update.paymentPending = false
+                customer.pendingPayments.update = false
+                // if(update.updateApproved){
+                //     await applyCustomerUpdate(custToUpdate, update)
+                // }
+                await update.save()
+            }
+            await purchase.save()
         }
-        await purchase.save()
     }
     catch(err){
         console.error(err)

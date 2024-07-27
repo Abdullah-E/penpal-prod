@@ -309,10 +309,11 @@ const customerSchema = new mongoose.Schema({
         required:true,
         default:false
     },
-    creationPaymentPending:{
-        type:Boolean,
-        required:true,
-        default:true
+    pendingPayments:{
+        creation:{type:Boolean, required:true, default:true},
+        renewal:{type:Boolean, required:true, default:false},
+        update:{type:Boolean, required:true, default:false},
+        totalAmount:{type:Number, required:false, default:0}
     },
     status:{
         type:String,
@@ -422,7 +423,12 @@ export const customerDefaultValues = {
     imageUrl: "",
     imageId: "",
     createdAt: Date.now(),
-    creationPaymentPending: true,
+    pendingPayments:{
+        creation: true,
+        renewal: false,
+        update: false,
+        totalAmount: 0
+    },
     profileApproved: false,
     status: "new",
     lastMatched: null,
