@@ -32,9 +32,9 @@ const productSchema = new mongoose.Schema({
 const Product = mongoose.model('Product', productSchema)
 export default Product
 
-export const products_cache = Product.find({}).exec()
+export const products_cache = await Product.find({}).exec()
 const update_products_cache = async () => {
-    products_cache = Product.find({}).exec()
+    products_cache = await Product.find({}).exec()
 }
 productSchema.pre('save', async function(next) {
     console.log('updating products cache')

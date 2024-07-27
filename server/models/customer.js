@@ -438,24 +438,28 @@ export const customerDefaultValues = {
     tier: "basic"
 }
 
-customerSchema.pre('save', async function(next) {
-    if(this.isModified('pendingPayments')){
-        this.pendingPayments.totalAmount = 0
-        if(this.pendingPayments.creation){
-            const product = products_cache.find(p => p.name === 'creation')
-            this.pendingPayments.totalAmount += product.price
-        }
-        if(this.pendingPayments.renewal){
-            const product = products_cache.find(p => p.name === 'renewal')
-            this.pendingPayments.totalAmount += product.price
-        }
-        if(this.pendingPayments.update){
-            const product = products_cache.find(p => p.name === 'update')
-            this.pendingPayments.totalAmount += product.price
-        }
+
+export const updatePendingPayments = function(cust) {
+    console.log('updating pending payments', products_cache);
+
+    cust.pendingPayments.totalAmount = 0;
+
+    if (cust.pendingPayments.creation) {
+        const product = products_cache.find(p => p.name === 'creation');
+        if (product) cust.pendingPayments.totalAmount += product.price;
     }
-    next()
-})
+    if (cust.pendingPayments.renewal) {
+        const product = products_cache.find(p => p.name === 'renewal');
+        if (product) cust.pendingPayments.totalAmount += product.price;
+    }
+    if (cust.pendingPayments.update) {
+        console.log('updating pending payments for update');
+        const product = products_cache.find(p => p.name === 'update');
+        console.log('product', product);
+        if (product) cust.pendingPayments.totalAmount += product.price;
+    }
+    return cust;
+};
 
 const Customer = mongoose.model('Customer', customerSchema)
 export default Customer
