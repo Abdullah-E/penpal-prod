@@ -1,5 +1,5 @@
 import { fastify, BASE_URL } from "./init.js";
-import Customer, {customerDefaultValues} from "../models/customer.js";
+import Customer, {customerDefaultValues, updatePendingPayments} from "../models/customer.js";
 import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdate.js";
 
@@ -45,7 +45,10 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         //some fields in request.body can be arrays, need to get the first element from them:
         const fieldsFromRequest = parseCustomerInfo(request.body)
         // console.log(fieldsFromRequest)
-        const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
+        // const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
+        let newCust = new Customer({...customerDefaultValues, ...fieldsFromRequest})
+        newCust = await updatePendingPayments(newCust)
+        await newCust.save()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
         if(!user.createdCustomers){
             user.createdCustomers = [newCust._id]
@@ -135,7 +138,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
                 status_code:403
             })
         }
-        const customerToUpdate = await Customer.findOne({_id:id}).exec();
+        let customerToUpdate = await Customer.findOne({_id:id}).exec();
         let newUpdate
         if(customerToUpdate.customerUpdate){
             newUpdate=await CustomerUpdate.findOne({_id:customerToUpdate.customerUpdate}).exec()
@@ -147,6 +150,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             })
             customerToUpdate.customerUpdate = newUpdate._id
             customerToUpdate.pendingPayments.update = true
+            customerToUpdate = updatePendingPayments(customerToUpdate)
             await customerToUpdate.save()
         }
         // const userUpdate = await User.findOneAndUpdate(
@@ -292,9 +296,15 @@ fastify.put(BASE_URL + '/customer/direct', async(request, reply)=>{
     try{
         const {id} = request.query;
         const newBody = request.body;
-        const customerToUpdate = await Customer.updateOne({_id:id}, newBody, {new:true}).lean().exec();
+        // const customerToUpdate = await Customer.findOneAndUpdate({_id:id}, newBody, {new:true}).lean().exec();
+        let customerToUpdate = await Customer.findOne({_id:id}).exec();
+        for(const field in newBody){
+            customerToUpdate[field] = newBody[field]
+        }
+        customerToUpdate = await updatePendingPayments(customerToUpdate)
+        const updatedCustomer = await customerToUpdate.save()
         reply.code(200).send({
-            data:customerToUpdate,
+            data:updatedCustomer,
             message:"Customer updated successfully",
             event_code:1,
             status_code:200

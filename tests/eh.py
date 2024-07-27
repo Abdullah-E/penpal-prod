@@ -208,9 +208,9 @@ customer_enums = {
         ]
     }
 }
-auth_token = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjBjYjQyNzQyYWU1OGY0ZGE0NjdiY2RhZWE0Yjk1YTI5ZmJhMGM1ZjkiLCJ0eXAiOiJKV1QifQ.eyJyb2xlIjoidXNlciIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9hd2F5b3V0LTU1ZmUyIiwiYXVkIjoiYXdheW91dC01NWZlMiIsImF1dGhfdGltZSI6MTcyMjA0NDYxNSwidXNlcl9pZCI6Ik12dGhQSjk3MzJWdjVIU1NsZnZJdVlWQ1lPQTIiLCJzdWIiOiJNdnRoUEo5NzMyVnY1SFNTbGZ2SXVZVkNZT0EyIiwiaWF0IjoxNzIyMDQ0NjE1LCJleHAiOjE3MjIwNDgyMTUsImVtYWlsIjoiY29obGVAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbImNvaGxlQGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.Iza_miDPmt5JwR5MwXib3p46DnjrlrtfPi00vI0RjP58ctZqOl_G7es75Dabmv3R_kt-Hg0X0FcfktsYYNgbNMcRrB61yRUlK-xluP5EKmRMq1JgyO3ju9iAItCccKxbbBFGrHivnjlOadnR3i6Ah_YOW9ormrLRj2Uxm5QJWjBek3anBMlr4bSjD3qd4EB8FSdh6puG8Ee3BvvzLG_kMPnCp26vv2eOcrj73txcAwlFem6bjaCOEMJBZtxLjHwBAnG83AgDWpleuflWENFzvtPXBPw9lmwluh0e_RfwOzJzdenkrqCsB83pSBN4Fhvjfo6VihOEN9MgW0lccF24fA"
-# BASE_URL = "http://localhost:8000/api/v1"
-BASE_URL = "https://penpal-prod.vercel.app/api/v1"
+auth_token = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjBjYjQyNzQyYWU1OGY0ZGE0NjdiY2RhZWE0Yjk1YTI5ZmJhMGM1ZjkiLCJ0eXAiOiJKV1QifQ.eyJyb2xlIjoidXNlciIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9hd2F5b3V0LTU1ZmUyIiwiYXVkIjoiYXdheW91dC01NWZlMiIsImF1dGhfdGltZSI6MTcyMjEwODk0NiwidXNlcl9pZCI6Ik12dGhQSjk3MzJWdjVIU1NsZnZJdVlWQ1lPQTIiLCJzdWIiOiJNdnRoUEo5NzMyVnY1SFNTbGZ2SXVZVkNZT0EyIiwiaWF0IjoxNzIyMTA4OTQ2LCJleHAiOjE3MjIxMTI1NDYsImVtYWlsIjoiY29obGVAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbImNvaGxlQGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.q1AsC6v10xC7xNRxDfbcTdT33fuxA9nEkllgWO01fCeu_Fm5eMsrpEl_GJiyFWt4lEfjmxy-hL6-tyyAT31OBMrSACjsd8XXwQa4Ff7-reiMXPSayVV-mxKjWrl4Meb4Tzk2iHxYPM5JmcH5xq_WCUbr-E3Z_PuZ1qH3wEFZhL7ifpwljrOC1Gj9PAoOTqQYh9bHS9lbHaC7nPGHdwI03BDAUSpz_85dUr5S60B4Wy69bwoFrhSj-PTr9ib2IVbSMdeIePlfYkM1HVEeZbJ0nzQ6fJawCGSqXl3I8kMeEYRKfgWVUT2xU61hF_uuUf2TzSE6Vd1Av0tHAdPMX0sv4Q"
+BASE_URL = "http://localhost:8000/api/v1"
+# BASE_URL = "https://penpal-prod.vercel.app/api/v1"
 
 
 def create_customer():
@@ -264,17 +264,18 @@ if __name__ == "__main__":
     customers = get_customers()
     # print(customers)
     # if key status isnt present in customer update the customer
+    update = {
+        "pendingPayments":{
+            "creation":True,
+            "update":False,
+            "renewal":False,
+            "totalAmount":1,
+        }
+    }
     for cust in customers:
-        update = {}
-        if "status" not in cust:
-            update["status"] = "active"
-            # update_customer(update, cust["_id"])
-        if "creationPaymentPending" not in cust:
-            update["creationPaymentPending"] = False
-        
-        if update:
-            print(f"Updating {cust['firstName']}")
-            update_customer(update, cust["_id"])
+        print(f"Updating {cust['firstName']}")
+        update_customer(update, cust["_id"])
+        break
 
 
 
