@@ -48,7 +48,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             product: product._id,
             customer: cid,
             sessionId: session.id,
-            quantity: quantity,
+            quantity: 1,
             total: product.price,
             status: 'open',
         })
