@@ -5,3 +5,19 @@ json object returned from a valid api call:
     message: 'string', //could be error message
     status_code: number, //200 for success, 500 for failure
 }
+
+
+
+
+
+payment/create-checkout-session
+
+header = authorization
+query = None
+
+body = {
+    "creation":true,
+    "update":true,
+    "renewal":true,
+    "cid":"66a42f2fdc44be2392ea19b9"
+}

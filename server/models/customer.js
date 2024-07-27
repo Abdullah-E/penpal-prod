@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { personalitySchema } from "./personality.js";
+import { products_cache } from "./product.js";
 
 const HAIR_TYPES = ["", "Bald", "Black", "Blonde", "Brown", "Gray", "Red", "Salt and Pepper", "Other"]
 const EYE_TYPES = [
@@ -309,10 +310,11 @@ const customerSchema = new mongoose.Schema({
         required:true,
         default:false
     },
-    creationPaymentPending:{
-        type:Boolean,
-        required:true,
-        default:true
+    pendingPayments:{
+        creation:{type:Boolean, required:true, default:true},
+        renewal:{type:Boolean, required:true, default:false},
+        update:{type:Boolean, required:true, default:false},
+        totalAmount:{type:Number, required:false, default:0}
     },
     status:{
         type:String,
@@ -422,7 +424,12 @@ export const customerDefaultValues = {
     imageUrl: "",
     imageId: "",
     createdAt: Date.now(),
-    creationPaymentPending: true,
+    pendingPayments:{
+        creation: true,
+        renewal: false,
+        update: false,
+        totalAmount: 0
+    },
     profileApproved: false,
     status: "new",
     lastMatched: null,
@@ -430,6 +437,25 @@ export const customerDefaultValues = {
     tag: "",
     tier: "basic"
 }
+
+customerSchema.pre('save', async function(next) {
+    if(this.isModified('pendingPayments')){
+        this.pendingPayments.totalAmount = 0
+        if(this.pendingPayments.creation){
+            const product = products_cache.find(p => p.name === 'creation')
+            this.pendingPayments.totalAmount += product.price
+        }
+        if(this.pendingPayments.renewal){
+            const product = products_cache.find(p => p.name === 'renewal')
+            this.pendingPayments.totalAmount += product.price
+        }
+        if(this.pendingPayments.update){
+            const product = products_cache.find(p => p.name === 'update')
+            this.pendingPayments.totalAmount += product.price
+        }
+    }
+    next()
+})
 
 const Customer = mongoose.model('Customer', customerSchema)
 export default Customer
