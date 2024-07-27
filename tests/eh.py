@@ -208,11 +208,12 @@ customer_enums = {
         ]
     }
 }
-auth_token = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImMxNTQwYWM3MWJiOTJhYTA2OTNjODI3MTkwYWNhYmU1YjA1NWNiZWMiLCJ0eXAiOiJKV1QifQ.eyJyb2xlIjoidXNlciIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9hd2F5b3V0LTU1ZmUyIiwiYXVkIjoiYXdheW91dC01NWZlMiIsImF1dGhfdGltZSI6MTcyMTM0Nzk5OSwidXNlcl9pZCI6InkzTzlLcEJyenpNVFZDeXpsVXFlNVFFTkZUOTIiLCJzdWIiOiJ5M085S3BCcnp6TVRWQ3l6bFVxZTVRRU5GVDkyIiwiaWF0IjoxNzIxMzQ3OTk5LCJleHAiOjE3MjEzNTE1OTksImVtYWlsIjoiaG1tbUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiaG1tbUBnbWFpbC5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.PX0a_LNrY55879lGP4nLI4C-LB2YgWkznk9frCuOPDOO6mrCoAtkMtuNjERgstXO5ZcvduHcD34nQXKg6-J0-K14hMAJXZQkNPy7v8aZsy8-XggfUNtr_KNw-5TJkfTPc-xxkx3phDTr1omzMOb8m7Z0slYft6bEo3-3LLth0SSLnxLLCOD6xzhPldE2Dy_eWNRrU_nx76v3qSW02bL8EawGFc_toL2_iNDthqr2EWpVxvD8R0wsccbXH-EOTWeU5ZN6Dy2KhlIomKHIqr35BQcJDdVNhmVw8wZ71VlKr2nDnStXwTq7hAWxfl-Et_Z6sAiYQLji9rIh_PU1tItfCA"
-BASE_URL = "http://localhost:8000/api/v1"
+auth_token = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjBjYjQyNzQyYWU1OGY0ZGE0NjdiY2RhZWE0Yjk1YTI5ZmJhMGM1ZjkiLCJ0eXAiOiJKV1QifQ.eyJyb2xlIjoidXNlciIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9hd2F5b3V0LTU1ZmUyIiwiYXVkIjoiYXdheW91dC01NWZlMiIsImF1dGhfdGltZSI6MTcyMjA0NDYxNSwidXNlcl9pZCI6Ik12dGhQSjk3MzJWdjVIU1NsZnZJdVlWQ1lPQTIiLCJzdWIiOiJNdnRoUEo5NzMyVnY1SFNTbGZ2SXVZVkNZT0EyIiwiaWF0IjoxNzIyMDQ0NjE1LCJleHAiOjE3MjIwNDgyMTUsImVtYWlsIjoiY29obGVAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbImNvaGxlQGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.Iza_miDPmt5JwR5MwXib3p46DnjrlrtfPi00vI0RjP58ctZqOl_G7es75Dabmv3R_kt-Hg0X0FcfktsYYNgbNMcRrB61yRUlK-xluP5EKmRMq1JgyO3ju9iAItCccKxbbBFGrHivnjlOadnR3i6Ah_YOW9ormrLRj2Uxm5QJWjBek3anBMlr4bSjD3qd4EB8FSdh6puG8Ee3BvvzLG_kMPnCp26vv2eOcrj73txcAwlFem6bjaCOEMJBZtxLjHwBAnG83AgDWpleuflWENFzvtPXBPw9lmwluh0e_RfwOzJzdenkrqCsB83pSBN4Fhvjfo6VihOEN9MgW0lccF24fA"
+# BASE_URL = "http://localhost:8000/api/v1"
+BASE_URL = "https://penpal-prod.vercel.app/api/v1"
 
 
-def create_customers():
+def create_customer():
     
     cust_obj = {}
     # for _ in range(num_customers):
@@ -242,16 +243,42 @@ def create_customers():
     }
     return cust_obj
 
+def get_customers():
+    all_customers = requests.get(f"{BASE_URL}/customer", headers={"Authorization":f"Bearer {auth_token}"}).json()
+    # print(f"Bearer {auth_token}")
+    customersList = all_customers["data"]
+    return customersList
+
+def update_customer(new_body, c_id):
+    update_resp = requests.put(f"{BASE_URL}/customer/direct?id={c_id}", 
+                                headers= {"Authorization": f"Bearer {auth_token}"},
+                                json=new_body).json()
+    print(update_resp)
 
 if __name__ == "__main__":
     
-    print(create_customers())
-    pass
-    # BASE_URL = "https://penpal-prod.vercel.app/api/v1"
-    
         # print(put_response.json())
-    
+    # update = {
+    #     "status": "active",
+    # }
+    customers = get_customers()
+    # print(customers)
+    # if key status isnt present in customer update the customer
+    for cust in customers:
+        update = {}
+        if "status" not in cust:
+            update["status"] = "active"
+            # update_customer(update, cust["_id"])
+        if "creationPaymentPending" not in cust:
+            update["creationPaymentPending"] = False
+        
+        if update:
+            print(f"Updating {cust['firstName']}")
+            update_customer(update, cust["_id"])
 
+
+
+    
 
 
 def ratings_fix():
