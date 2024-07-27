@@ -4,7 +4,7 @@ import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdate.js";
 
 import {verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings, flagCreated } from "../utils/db_utils.js";
+import { flagFavorites, flagRatings, flagCreated, flagUpdated } from "../utils/db_utils.js";
 
 fastify.addHook('onRequest', async(request, reply)=>{
     const isExcludedRoute = 
@@ -42,9 +42,7 @@ const parseCustomerInfo = (body) => {
 fastify.post(BASE_URL + '/customer', async(request, reply)=>{
     try{
         
-
         //some fields in request.body can be arrays, need to get the first element from them:
-        // const fields = Object.keys(request.body)
         const fieldsFromRequest = parseCustomerInfo(request.body)
         // console.log(fieldsFromRequest)
         const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
@@ -86,7 +84,7 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             
             //add them in here
         }
-        let customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
+        let customers = await Customer.find(query).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
         
         // const fb_user = await getUserFromToken(request);
         if(request.user && request.user.role === "user"){
@@ -94,6 +92,7 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             customers = await flagFavorites(user, customers)
             customers = await flagRatings(user, customers)
             customers = await flagCreated(user, customers)
+            customers = flagUpdated(customers)
             // console.log(customers)
         }
 
@@ -267,7 +266,7 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
     try{
         const n = request.query.n || 5;
         const customers = await Customer.aggregate([
-            // {$match:{rating:{$gt:3}}},
+            {$match:{profileApproved:true, status:"active"}},
             {$project:{_id:0, firstName:1, lastName:1, rating:1, profilePic:1, age:1, state:1, imageUrl:1, tag:1}},
             {$sample:{size:parseInt(n)}},
         ]).exec();
@@ -283,6 +282,28 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
         console.error(error)
         reply.code(400).send({
             message:"Customer not found",
+            event_code:0,
+            status_code:400,
+            data:null
+        });
+    }
+})
+
+fastify.put(BASE_URL + '/customer/direct', async(request, reply)=>{
+    try{
+        const {id} = request.query;
+        const newBody = request.body;
+        const customerToUpdate = await Customer.updateOne({_id:id}, newBody, {new:true}).lean().exec();
+        reply.code(200).send({
+            data:customerToUpdate,
+            message:"Customer updated successfully",
+            event_code:1,
+            status_code:200
+        });
+    }catch(error){
+        console.error(error)
+        reply.code(400).send({
+            message:"Customer not updated",
             event_code:0,
             status_code:400,
             data:null

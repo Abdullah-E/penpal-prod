@@ -8,6 +8,11 @@ const purchaseSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    customer:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: true
+    },
     product:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',
@@ -30,9 +35,13 @@ const purchaseSchema = new mongoose.Schema({
         default: Date.now,
         required: true
     },
+    paidAt:{
+        type: Date,
+        required: false
+    },
     status:{
         type: String,
-        default: 'pending',
+        default: 'open',
         required: true
     }
 })

@@ -1,6 +1,3 @@
-
-import User from '../models/user.js'
-
 export const flagFavorites = async (user, customers) => {
 
     const {favorite:favoriteList} = await user.populate("favorite")
@@ -38,6 +35,14 @@ export const flagRatings = async (user, customers) => {
 export const flagCreated = async (user, customers) => {
     customers.map(customer=>{
         customer.createdByCurrent = user.createdCustomers.includes(customer._id)
+        return customer
+    })
+    return customers
+}
+
+export const flagUpdated = (customers) => {
+    customers.map(customer=>{
+        customer.updateApproved = !customer.customerUpdate;
         return customer
     })
     return customers

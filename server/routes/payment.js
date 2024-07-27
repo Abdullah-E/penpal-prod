@@ -7,53 +7,71 @@ import Product from '../models/product.js'
 import Stripe from 'stripe'
 
 import { verifyToken } from '../utils/firebase_utils.js'
+import Customer from '../models/customer.js'
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
 // console.log(process.env.STRIPE_API_KEY)
 
 fastify.addHook('onRequest', async (request, reply) => {
-
     // const isExcludedRoute = request.routeOptions.url.includes('webhook')
     if(
-    
         request.routeOptions.url
         && request.routeOptions.url.includes(BASE_URL + '/payment')
     ){
         await verifyToken(request, reply)
     }
-    
 })
 
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
-    const {productName, quantity} = request.body
-    const product = await Product.findOne({name: productName})
-    const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+    try{
 
-    const session = await stripe.checkout.sessions.create({
-        ui_mode:'embedded',
-        mode: 'payment',
-        payment_method_types: ['card'],
-        line_items: [
-            {
-                price: product.priceId,
-                quantity: parseInt(quantity)
-            }
-        ],
-        return_url: `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`,
-    })
-
-    const newPurchase = new Purchase({
-        user: user._id,
-        product: product._id,
-        sessionId: session.id,
-        quantity: quantity,
-        total: product.price * parseInt(quantity),
-        status: 'pending',
-    })
-
-    await newPurchase.save()
-    console.log(session)
-    reply.send({clientSecret: session.client_secret})
+        const {productName, cid} = request.body
+        const product = await Product.findOne({name: productName})
+        const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+        
+        const session = await stripe.checkout.sessions.create({
+            ui_mode:'embedded',
+            mode: 'payment',
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price: product.priceId,
+                    quantity: 1
+                }
+            ],
+            return_url: `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`,
+        })
+    
+        const newPurchase = new Purchase({
+            user: user._id,
+            product: product._id,
+            customer: cid,
+            sessionId: session.id,
+            quantity: quantity,
+            total: product.price,
+            status: 'open',
+        })
+    
+        await newPurchase.save()
+        console.log(session)
+        reply.send({
+            data:{
+                clientSecret: session.client_secret,
+                status:session.status
+            },
+            message: 'Session created',
+            status_code: 200,
+            event_code:1
+        })
+    }catch(err){
+        console.error(err)
+        return reply.status(500).send({
+            message: err.message,
+            data: null,
+            status_code: 500,
+            event_code: 0
+        })
+    }
 
 })
 
@@ -64,19 +82,36 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         const purchase = await Purchase.findOne({sessionId: session_id}).exec()
     
         purchase.status = session.status
+        
         await purchase.save()
     
         console.log(session)
         reply.send({
             data:{
-                status: session.status,
-                customerEmail: session.customer_details.email
-            }
+                status: session.status
+                // customerEmail: session.customer_details.email
+            },
+            message: 'Session retrieved',
+            status_code: 200,
+            event_code:1
         })
+        if(session.status !== 'completed'){
+            return
+        }
+        purchase.paidAt = new Date()
+        if(purchase.product == 'year_profile'){
+            await Customer.updateOne({_id: purchase.customer}, {creationPaymentPending: false, status:'active'})
+
+        }
     }
     catch(err){
         console.error(err)
-        reply.status(500).send({error: err.message})
+        reply.status(500).send({
+            message: err.message,
+            data: null,
+            status_code: 500,
+            event_code: 0
+        })
     }
 })
 
@@ -100,9 +135,6 @@ fastify.post(BASE_URL+'/product', async (request, reply) => {
 
 fastify.post(BASE_URL+'/webhook', async (request, reply) => {
 
-    const sig = request.headers['stripe-signature']
-
-    let event
     console.log('Webhook received')
     console.log(request.body)
     // try{
@@ -123,5 +155,5 @@ fastify.post(BASE_URL+'/webhook', async (request, reply) => {
     //         console.log(`Unhandled event type ${event.type}`)
     // }
 
-    // reply.status(200).send({received: true})
+    reply.status(200).send({received: true})
 })

@@ -15,10 +15,10 @@ import Favorite from "../models/favorite.js";
 import { personalitySchema } from "../models/personality.js";
 
 import { verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings, flagCreated } from "../utils/db_utils.js";
+import { flagFavorites, flagRatings, flagCreated, flagUpdated } from "../utils/db_utils.js";
+import Purchase from "../models/purchase.js";
 
 // import {BASE_URL} from '../server.js'
-
 fastify.addHook("onRequest", async (request, reply) => {
   const isExcludedRoute =
     (request.routeOptions.url === BASE_URL + "/user" &&
@@ -338,7 +338,7 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
   }
   try {
     const {p:page, l:limit} = request.query;
-    const user = await User.findOne({ firebaseUid: request.user.uid })
+    const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
     if (user.profileComplete == false) {
       let matches = await Customer.find().sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
       matches = await flagFavorites(user, matches)
@@ -367,8 +367,8 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
       {$limit:parseInt(limit)},
     ]).exec()
     // console.log(customerList)
-    let matches = await flagFavorites(request.user.uid, customerList)
-    matches = await flagRatings(request.user.uid, matches)
+    let matches = await flagFavorites(user, customerList)
+    matches = await flagRatings(user, matches)
     reply.send({
       data: matches,
       event_code: 1,
@@ -397,7 +397,7 @@ fastify.get(BASE_URL + "/user/created-customers", async (request, reply) => {
     return;
   }
   try {
-    const customerList = await User.aggregate([
+    let customerList = await User.aggregate([
       {$match:{firebaseUid:request.user.uid}},
       {$project:{createdCustomers:1,_id:0}},
       {$lookup:{
@@ -409,7 +409,7 @@ fastify.get(BASE_URL + "/user/created-customers", async (request, reply) => {
       {$unwind:"$createdCustomers"},
       {$replaceRoot:{newRoot:"$createdCustomers"}}
     ]).exec()
-
+    customerList = await flagUpdated(customerList)
     reply.send({
       data: customerList,
       event_code: 1,
@@ -583,7 +583,7 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
     })
     favorites = await flagRatings(user, favorites)
     favorites = await flagCreated(user, favorites)
-    favorites = await flagCreated(user, favorites)
+    favorites = flagUpdated(favorites)
 
     reply.send({
       data: favorites,
@@ -599,6 +599,96 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
       message: error._message || error.message || error.name,
       status_code: 500,
     });
+  }
+})
+
+fastify.get(BASE_URL+'/user/pending-payments', async (request, reply) => {
+  try{
+
+    const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+    // console.log(user)
+    const createdCustomers = await User.aggregate([
+      {$match:{firebaseUid:request.user.uid}},
+      {$project:{createdCustomers:1,_id:0}},
+      {$lookup:{
+        from:"customers",
+        localField:"createdCustomers",
+        foreignField:"_id",
+        as:"createdCustomers"
+      }},
+      {$unwind:"$createdCustomers"},
+      {$replaceRoot:{newRoot:"$createdCustomers"}},
+      // {$match:{status:"pending"}}
+    ]).exec()
+    //make 
+    console.log(createdCustomers)
+    let payments = []    
+
+    for(let cust of createdCustomers){
+      // const cust = createdCustomers[i]
+      const pending = cust.status === "new"
+      if(!pending) {continue}
+      let totalAmount = 0
+
+      cust.profileCreation = false
+      cust.profileRenewal = false
+
+      if(cust.status==="new"){
+        cust.profileCreation = true
+        totalAmount += 1
+      }
+      if(cust.status === "expired"){
+        cust.profileRenewal = true
+        totalAmount += 1
+      }
+      const payment = {...cust, totalAmount}
+      payments.push(payment)
+    }
+    return reply.send({
+      data:payments,
+      event_code:1,
+      message:"Payments fetched successfully",
+      status_code:200
+    })
+  }
+  catch(err){
+    console.error(err)
+    return reply.status(500).send({
+      data:null,
+      event_code:0,
+      message:err.message,
+      status_code:500
+    })
+  }
+})
+
+fastify.get(BASE_URL + "/user/history-payments", async (request, reply) => {
+  try {
+
+    const {cid} = request.query
+    const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
+    const purchases = await Purchase.find({user: user._id, customer: cid, status:"completed"}).select({
+      product:1,
+      quantity:1,
+      total:1,
+      createdAt:1,
+    }).exec()
+
+    return reply.send({
+      data: purchases,
+      event_code: 1,
+      message: "Payments fetched successfully",
+      status_code: 200,
+    })
+  }
+  catch(err){
+    console.error(err)
+    return reply.status(500).send({
+      data:null,
+      event_code:0,
+      message:err.message,
+      status_code:500
+    })
   }
 })
 
