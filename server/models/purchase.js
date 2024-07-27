@@ -1,6 +1,7 @@
 import mongoose from "mongoose"
 
 const TYPE_ENUMS = ['one-time', 'subscription']
+const PRODUCT_ENUMS = ['newProfile', 'renewProfile', 'updateProfile']
 
 const purchaseSchema = new mongoose.Schema({
     user: {

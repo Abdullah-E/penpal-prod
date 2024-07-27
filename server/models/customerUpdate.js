@@ -20,6 +20,11 @@ const customerUpdateSchema = new mongoose.Schema({
         required: true,
         default: false
     },
+    paymentPending:{
+        type: Boolean,
+        required: true,
+        default: true
+    },
     createdAt: {
         type: Date,
         default: Date.now,

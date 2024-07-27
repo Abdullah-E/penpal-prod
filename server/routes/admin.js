@@ -1,13 +1,15 @@
 import { fastify, BASE_URL } from "./init.js";
 
 // import User from "../models/user.js";
-import Customer from "../models/customer.js";
-import CustomerUpdate from "../models/customerUpdate.js";
-import { getUserFromToken } from "../utils/firebase_utils.js";
+import Customer from "../models/customer.js"
+import CustomerUpdate from "../models/customerUpdate.js"
+import { getUserFromToken } from "../utils/firebase_utils.js"
+
+import { applyCustomerUpdate } from "../utils/db_utils.js"
 
 fastify.addHook("onRequest", async (request, reply) => {
     if (request.routeOptions.url && request.routeOptions.url.startsWith(BASE_URL+"/admin")){
-        const fb_user = await getUserFromToken(request, reply);
+        const fb_user = await getUserFromToken(request, reply)
         if (!fb_user) {
             return reply.code(403).send({
                 data:null,
@@ -23,7 +25,7 @@ fastify.addHook("onRequest", async (request, reply) => {
                 event_code:0
             })
         }else{
-            request.user = fb_user;
+            request.user = fb_user
         }
     }
 })
@@ -139,15 +141,18 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
                 console.error("Update not found for customer", customer._id)
                 continue
             }
-            for(const field in update.newBody){
-                customer[field] = update.newBody[field]
+            if(!update.paymentPending){
+                // for(const field in update.newBody){
+                //     customer[field] = update.newBody[field]
+                // }
+                // await customer.updateOne({$unset:{customerUpdate:1}})
+                // delete customer._doc.customerUpdate
+                // customer.lastUpdated = Date.now()
+                // await customer.save()
+                await applyCustomerUpdate(customer, update)
             }
-            await customer.updateOne({$unset:{customerUpdate:1}})
-            delete customer._doc.customerUpdate
-            customer.lastUpdated = Date.now()
-            await customer.save()
-            updatedCustomers.push(customer)
             update.updateApproved = true
+            updatedCustomers.push(customer)
             await update.save()
         }
         reply.send({

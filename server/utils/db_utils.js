@@ -79,4 +79,14 @@ export const findInsertionIndex = (array, score)=> {
     }
   
     return low;
-  }
+}
+
+export const applyCustomerUpdate = async (customer, update) => {
+    for(const field in update.newBody){
+        customer[field] = update.newBody[field]
+    }
+    // await customer.updateOne({$unset:{customerUpdate:1}})
+    delete customer._doc.customerUpdate
+    customer.lastUpdated = Date.now()
+    await customer.save()
+}

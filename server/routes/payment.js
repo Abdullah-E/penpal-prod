@@ -3,14 +3,15 @@ import {BASE_URL, fastify} from './init.js'
 import User from '../models/user.js'
 import Purchase from '../models/purchase.js'
 import Product from '../models/product.js'
+import Customer from '../models/customer.js'
+import CustomerUpdate from '../models/customerUpdate.js'
 
 import Stripe from 'stripe'
 
 import { verifyToken } from '../utils/firebase_utils.js'
-import Customer from '../models/customer.js'
+import {applyCustomerUpdate} from '../utils/db_utils.js'
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
-// console.log(process.env.STRIPE_API_KEY)
 
 fastify.addHook('onRequest', async (request, reply) => {
     // const isExcludedRoute = request.routeOptions.url.includes('webhook')
@@ -79,12 +80,6 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
     try{
         const {session_id} = request.query
         const session = await stripe.checkout.sessions.retrieve(session_id)
-        const purchase = await Purchase.findOne({sessionId: session_id}).exec()
-    
-        purchase.status = session.status
-        
-        await purchase.save()
-    
         console.log(session)
         reply.send({
             data:{
@@ -95,14 +90,32 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             status_code: 200,
             event_code:1
         })
+
+        const purchase = await Purchase.findOne({sessionId: session_id}).exec()
+        purchase.status = session.status
+        
         if(session.status !== 'completed'){
             return
         }
         purchase.paidAt = new Date()
-        if(purchase.product == 'year_profile'){
-            await Customer.updateOne({_id: purchase.customer}, {creationPaymentPending: false, status:'active'})
-
+        if(purchase.product === 'newProfile'){
+            await Customer.updateOne({_id: purchase.customer}, {
+                creationPaymentPending: false,
+                status:'active',
+                expiresAt: new Date(Date.now() + 30*24*60*60*1000)
+            }).exec()
         }
+        else if(purchase.product === 'updateProfile'){
+            const custToUpdate = await Customer.findOne({_id: purchase.customer})
+            const update = await CustomerUpdate.findOne({_id: custToUpdate.customerUpdate})
+            update.paymentPending = false
+            
+            if(update.updateApproved){
+                await applyCustomerUpdate(custToUpdate, update)
+            }
+            await update.save()
+        }
+        await purchase.save()
     }
     catch(err){
         console.error(err)
