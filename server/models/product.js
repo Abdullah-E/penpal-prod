@@ -29,6 +29,8 @@ const productSchema = new mongoose.Schema({
     },
 
 })
+const Product = mongoose.model('Product', productSchema)
+export default Product
 
 export const products_cache = Product.find({}).exec()
 const update_products_cache = async () => {
@@ -40,6 +42,3 @@ productSchema.pre('save', async function(next) {
     next()
 })
 
-
-const Product = mongoose.model('Product', productSchema)
-export default Product
