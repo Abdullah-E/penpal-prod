@@ -6,11 +6,10 @@ import Product from '../models/product.js'
 import Customer from '../models/customer.js'
 import CustomerUpdate from '../models/customerUpdate.js'
 
-import Stripe from 'stripe'
-
 import { verifyToken } from '../utils/firebase_utils.js'
 import {applyCustomerUpdate} from '../utils/db_utils.js'
 
+import Stripe from 'stripe'
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
 
 fastify.addHook('onRequest', async (request, reply) => {
@@ -32,7 +31,6 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         if(creation) boughtProducts.push('creation')
         if(renewal) boughtProducts.push('renewal')
         if(update) boughtProducts.push('update')
-
 
         const products = await Product.find({name: boughtProducts}).exec()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()

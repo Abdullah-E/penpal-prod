@@ -604,9 +604,6 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
 
 fastify.get(BASE_URL+'/user/pending-payments', async (request, reply) => {
   try{
-
-    // const user = await User.findOne({firebaseUid:request.user.uid}).exec()
-    // console.log(user)
     const createdCustomers = await User.aggregate([
       {$match:{firebaseUid:request.user.uid}},
       {$project:{createdCustomers:1,_id:0}},
@@ -618,7 +615,6 @@ fastify.get(BASE_URL+'/user/pending-payments', async (request, reply) => {
       }},
       {$unwind:"$createdCustomers"},
       {$replaceRoot:{newRoot:"$createdCustomers"}},
-      // {$match:{status:"pending"}}
     ]).exec()
     //make 
     console.log(createdCustomers)
@@ -628,10 +624,6 @@ fastify.get(BASE_URL+'/user/pending-payments', async (request, reply) => {
       // const cust = createdCustomers[i]
       const pending = cust.pendingPayments.creation || cust.pendingPayments.renewal || cust.pendingPayments.update
       if(!pending) {continue}
-      // let totalAmount = 0
-
-      // cust.profileCreation = false
-      // cust.profileRenewal = false
       
       payments.push(cust)
     }
