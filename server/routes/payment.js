@@ -23,38 +23,57 @@ fastify.addHook('onRequest', async (request, reply) => {
     }
 })
 
+// const product_names = ['creation', 'renewal', 'update']
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
     try{
+        //creatoin renewal update are boolean values
+        const {creation,renewal,update, cid} = request.body
+        const boughtProducts = []
+        if(creation) boughtProducts.push('creation')
+        if(renewal) boughtProducts.push('renewal')
+        if(update) boughtProducts.push('update')
 
-        const {productName, cid} = request.body
-        const product = await Product.findOne({name: productName})
+
+        const products = await Product.find({name: boughtProducts}).exec()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
-        
+
+        const line_items = products.map(product => {
+            return {
+                price: product.priceId,
+                quantity: 1
+            }
+        })
+        if(line_items.length === 0){
+            return reply.status(400).send({
+                message: 'No products found',
+                data: null,
+                status_code: 400,
+                event_code: 0
+            })
+        }
+
         const session = await stripe.checkout.sessions.create({
             ui_mode:'embedded',
             mode: 'payment',
             payment_method_types: ['card'],
-            line_items: [
-                {
-                    price: product.priceId,
-                    quantity: 1
-                }
-            ],
+            line_items: line_items,
             return_url: `http://localhost:3000/return?session_id={CHECKOUT_SESSION_ID}`,
         })
+        for(let product of products){
+
+            const newPurchase = new Purchase({
+                user: user._id,
+                product: product._id,
+                customer: cid,
+                sessionId: session.id,
+                quantity: 1,
+                total: product.price,
+                status: 'open',
+            })
     
-        const newPurchase = new Purchase({
-            user: user._id,
-            product: product._id,
-            customer: cid,
-            sessionId: session.id,
-            quantity: 1,
-            total: product.price,
-            status: 'open',
-        })
-    
-        await newPurchase.save()
-        console.log(session)
+            await newPurchase.save()
+        }
+        // console.log(session)
         reply.send({
             data:{
                 clientSecret: session.client_secret,
