@@ -266,7 +266,7 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
     try{
         const n = request.query.n || 5;
         const customers = await Customer.aggregate([
-            // {$match:{rating:{$gt:3}}},
+            {$match:{profileApproved:true, status:"active"}},
             {$project:{_id:0, firstName:1, lastName:1, rating:1, profilePic:1, age:1, state:1, imageUrl:1, tag:1}},
             {$sample:{size:parseInt(n)}},
         ]).exec();
@@ -282,6 +282,28 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
         console.error(error)
         reply.code(400).send({
             message:"Customer not found",
+            event_code:0,
+            status_code:400,
+            data:null
+        });
+    }
+})
+
+fastify.put(BASE_URL + '/customer/direct', async(request, reply)=>{
+    try{
+        const {id} = request.query;
+        const newBody = request.body;
+        const customerToUpdate = await Customer.updateOne({_id:id}, newBody, {new:true}).lean().exec();
+        reply.code(200).send({
+            data:customerToUpdate,
+            message:"Customer updated successfully",
+            event_code:1,
+            status_code:200
+        });
+    }catch(error){
+        console.error(error)
+        reply.code(400).send({
+            message:"Customer not updated",
             event_code:0,
             status_code:400,
             data:null
