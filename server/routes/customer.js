@@ -348,11 +348,11 @@ favorite.favorites
 fastify.delete(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const {id} = request.query;
-        const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
-        if(!userToUpdate.createdCustomers.includes(id)){
+        // const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
+        if(request.user.role !== "admin"){
             return reply.code(403).send({
                 data:null,
-                message:"Unauthorized - Not creator of customer",
+                message:"Unauthorized - Admin only",
                 event_code:0,
                 status_code:403
             })
