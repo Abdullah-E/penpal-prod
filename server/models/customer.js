@@ -461,5 +461,8 @@ export const updatePendingPayments = function(cust) {
     return cust;
 };
 
+const DeletedCustomer = mongoose.model('DeletedCustomer', customerSchema)
+export {DeletedCustomer}
+
 const Customer = mongoose.model('Customer', customerSchema)
 export default Customer

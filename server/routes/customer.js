@@ -1,7 +1,10 @@
 import { fastify, BASE_URL } from "./init.js";
-import Customer, {customerDefaultValues, updatePendingPayments} from "../models/customer.js";
+import mongoose from "mongoose";
+
+import Customer, {customerDefaultValues, updatePendingPayments, DeletedCustomer} from "../models/customer.js";
 import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdate.js";
+import Favorite from "../models/favorite.js";
 
 import {verifyToken } from "../utils/firebase_utils.js";
 import { flagFavorites, flagRatings, flagCreated, flagUpdated } from "../utils/db_utils.js";
@@ -329,4 +332,82 @@ fastify.delete(BASE_URL + '/customer/allupdates', async(request, reply)=>{
         event_code:1,
         status_code:200
     })
+})
+
+/*customer is present in user: 
+createdCustomers, 
+ratings,
+favorite,
+compatibleCustomers,
+
+as customer field in
+customerUpdate.customer
+favorite.favorites
+*/
+
+fastify.delete(BASE_URL + '/customer', async(request, reply)=>{
+    try{
+        const {id} = request.query;
+        const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
+        if(!userToUpdate.createdCustomers.includes(id)){
+            return reply.code(403).send({
+                data:null,
+                message:"Unauthorized - Not creator of customer",
+                event_code:0,
+                status_code:403
+            })
+        }
+        // const customerToDelete = await Customer.findOneAndDelete({_id:id}).exec();
+        const customerToDelete = await Customer.findOne({_id:id}).exec();
+        
+        if(customerToDelete){
+            
+            const deletedCustomer = new DeletedCustomer(customerToDelete.toObject())
+            deletedCustomer.deletedAt = new Date()
+            deletedCustomer._id = new mongoose.Types.ObjectId()
+            await deletedCustomer.save()
+            // await customerToDelete.remove()
+            await Customer.deleteOne({_id:id}).exec() 
+        }
+
+        const user = await User.findOne(
+            {firebaseUid:request.user.uid}
+        )
+        .populate('favorite')
+        .populate('createdCustomers')
+        // .populate('customerUpdates')
+        .lean()
+        .exec()
+
+        // user.createdCustomers = user.createdCustomers.filter(c => c.toString() !== id)
+        // user.favorite.favorites = user.favorite.favorites.filter(f => f.toString() !== id)
+        await Favorite.updateOne(
+            {user:user._id},
+            {$pull:{favorites:id}}
+        ).exec()
+
+        await CustomerUpdate.deleteMany({customer:id}).exec()
+        user.compatibleCustomers = user.compatibleCustomers.filter(c => c.toString() !== id)
+        user.ratings = user.ratings.filter(r => r.customerId.toString() !== id)
+
+        await User.updateOne(
+            {firebaseUid:request.user.uid},
+            user
+        ).exec()
+
+        return reply.code(200).send({
+            data:customerToDelete,
+            message:"Customer deleted successfully",
+            event_code:1,
+            status_code:200
+        });
+    }catch(error){
+        console.error(error)
+        return reply.code(400).send({
+            message:"Customer not deleted",
+            event_code:0,
+            status_code:400,
+            data:null
+        });
+    }
 })

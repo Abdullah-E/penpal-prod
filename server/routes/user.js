@@ -369,6 +369,8 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     // console.log(customerList)
     let matches = await flagFavorites(user, customerList)
     matches = await flagRatings(user, matches)
+    //sort matches by ratings
+    matches = matches.sort((a,b) => b.rating - a.rating)
     reply.send({
       data: matches,
       event_code: 1,
