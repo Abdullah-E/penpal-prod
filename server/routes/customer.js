@@ -32,6 +32,9 @@ const parseCustomerInfo = (body) => {
             // console.log("skipping", field)
             customer[field] = body[field]
             return
+        }else if(field === "photos"){
+            customer[field]["total"] = body[field]["artworks"].length + (body[field]["imageUrl"]?1:0) 
+            return
         }
         customer[field] = Array.isArray(body[field]) ? body[field][0] : body[field]
         customer[field] = customer[field] === undefined || 
@@ -370,30 +373,28 @@ fastify.delete(BASE_URL + '/customer', async(request, reply)=>{
             await Customer.deleteOne({_id:id}).exec() 
         }
 
-        const user = await User.findOne(
-            {firebaseUid:request.user.uid}
-        )
-        .populate('favorite')
-        .populate('createdCustomers')
-        // .populate('customerUpdates')
-        .lean()
-        .exec()
+        
+        await User.updateMany(
+            {},
+            {$pull:{createdCustomers:id}, $pull:{compatibleCustomers:id}, $pull:{ratings:{customerId:id}}},
+        ).exec()
+        
 
         // user.createdCustomers = user.createdCustomers.filter(c => c.toString() !== id)
         // user.favorite.favorites = user.favorite.favorites.filter(f => f.toString() !== id)
-        await Favorite.updateOne(
-            {user:user._id},
+        await Favorite.updateMany(
+            {},
             {$pull:{favorites:id}}
         ).exec()
 
         await CustomerUpdate.deleteMany({customer:id}).exec()
-        user.compatibleCustomers = user.compatibleCustomers.filter(c => c.toString() !== id)
-        user.ratings = user.ratings.filter(r => r.customerId.toString() !== id)
+        // user.compatibleCustomers = user.compatibleCustomers.filter(c => c.toString() !== id)
+        // user.ratings = user.ratings.filter(r => r.customerId.toString() !== id)
 
-        await User.updateOne(
-            {firebaseUid:request.user.uid},
-            user
-        ).exec()
+        // await User.updateOne(
+        //     {firebaseUid:request.user.uid},
+        //     user
+        // ).exec()
 
         return reply.code(200).send({
             data:customerToDelete,

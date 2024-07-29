@@ -343,10 +343,23 @@ const customerSchema = new mongoose.Schema({
         required:false,
         default:0
     },
-    imageUrl:{
-        type:String,
-        required:false,
-        default:""
+    photos:{
+        imageUrl:{
+            type:String,
+            required:false,
+            default:""
+        },
+        artworks:{
+            type:[String],
+            required:false,
+            default:""
+        },
+        total:{
+            type:Number,
+            required:false,
+            default:0
+        }
+
     },
     imageId:{
         type:String,
@@ -421,7 +434,11 @@ export const customerDefaultValues = {
     rating: null,
     ratingReal: null,
     numRatings: 0,
-    imageUrl: "",
+    photos:{
+        imageUrl: "",
+        artworks: [],
+        total: 0
+    },
     imageId: "",
     createdAt: Date.now(),
     pendingPayments:{

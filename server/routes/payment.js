@@ -132,34 +132,29 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             event_code:1
         })
 
-        const purchases = await Purchase.find({sessionId: session_id}).exec()
+        const purchase = await Purchase.findOne({sessionId: session_id}).exec()
         // const purchase = await Purchase.findOne({sessionId: session_id}).exec()
         if(session.status !== 'completed'){
             return
         }
-        for(const purchase of purchases){
-            purchase.status = session.status
-            purchase.paidAt = new Date()
-            const customer = await Customer.findOne({_id: purchase.customer}).exec()
-            if(purchase.product === 'creation'){
-                // await Customer.updateOne({_id: purchase.customer}, {
-                //     pendingPayments: {
-
-                //     },
-                //     status:'active',
-                //     expiresAt: new Date(Date.now() + 30*24*60*60*1000)
-                // }).exec()
+        purchase.paidAt = new Date()
+        const customer = await Customer.findOne({_id: purchase.customer}).popoulate('products.product').exec()
+        for(const product of purchase.products){
+            // purchase.status = session.status
+            if(product.name === 'creation'){
                 customer.pendingPayments.creation = false
                 customer.status = 'active'
-                customer.expiresAt = new Date(Date.now() + 30*24*60*60*1000)
+                //a year after current date
+                const date = Date.now()
+                customer.expiresAt = new Date(date.setFullYear(date.getFullYear() + 1))
 
             }
-            else if(purchase.product === 'renewal'){
+            else if(product.name === 'renewal'){
                 customer.pendingPayments.renewal = false
-                customer.expiresAt = new Date(customer.expiresAt.getTime() + 30*24*60*60*1000)
+                customer.expiresAt = new Date(customer.expiresAt.setFullYear(customer.expiresAt.getFullYear() + 1))
                 customer.status = 'active'
             }
-            else if(purchase.product === 'update'){
+            else if(product.name === 'update'){
                 // const custToUpdate = await Customer.findOne({_id: purchase.customer})
                 const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
                 update.paymentPending = false
