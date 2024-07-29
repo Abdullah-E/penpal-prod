@@ -387,14 +387,38 @@ const customerSchema = new mongoose.Schema({
         type: Date,
         required: false
     },
-    tag:{
-        type: String, required: false, default: ""
-    },
-    tier:{
-        type: String,
-        required: false,
-        default: "basic"
-    },
+    placementFlags:{
+        premiumPlacement:{
+            type:Boolean,
+            required:false,
+            default:false
+        },
+        featuredPlacement:{
+            type:Boolean,
+            required:false,
+            default:false
+        },
+        recentlyUpdated:{
+            type:Boolean,
+            required:false,
+            default:false
+        },
+        newlyListed:{
+            type:Boolean,
+            required:false,
+            default:false
+        },
+        
+        premiumExpires:{
+            type: Date,
+            required: false
+        },
+        featuredExpires:{
+            type: Date,
+            required: false
+        }
+
+    }
 })
 
 export const customerDefaultValues = {
@@ -451,8 +475,7 @@ export const customerDefaultValues = {
     status: "new",
     lastMatched: null,
     lastUpdated: null,
-    tag: "",
-    tier: "basic"
+    
 }
 
 
