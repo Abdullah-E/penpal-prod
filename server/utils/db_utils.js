@@ -83,6 +83,12 @@ export const findInsertionIndex = (array, score)=> {
 
 export const applyCustomerUpdate = async (customer, update) => {
     for(const field in update.newBody){
+        if(field === "personality"){
+            for(const subfield in update.newBody[field]){
+                customer[field][subfield] = update.newBody[field][subfield]
+            }
+            continue;
+        }
         customer[field] = update.newBody[field]
     }
     // await customer.updateOne({$unset:{customerUpdate:1}})
