@@ -103,6 +103,8 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
         const updates = await CustomerUpdate.find(query).populate("customer").populate("user").lean().exec()
         const returnArr = []
         for(const update of updates){
+            if(!update.customer) continue
+            console.log("update", update)
             returnArr.push({
                 ...update.customer,...update.newBody,
                 updatedFields:Object.keys(update.newBody),
