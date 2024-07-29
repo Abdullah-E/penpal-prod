@@ -145,8 +145,8 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
                 customer.pendingPayments.creation = false
                 customer.status = 'active'
                 //a year after current date
-                const date = Date.now()
-                customer.expiresAt = new Date(date.setFullYear(date.getFullYear() + 1))
+                // const date = Date.now()
+                // customer.expiresAt = new Date(date.setFullYear(date.getFullYear() + 1))
 
             }
             else if(product.name === 'renewal'){

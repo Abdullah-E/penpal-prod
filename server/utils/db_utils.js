@@ -94,5 +94,8 @@ export const applyCustomerUpdate = async (customer, update) => {
     // await customer.updateOne({$unset:{customerUpdate:1}})
     delete customer._doc.customerUpdate
     customer.lastUpdated = Date.now()
+    
+    if(!customer.placementFlags) customer.placementFlags = {}
+    customer["placementFlags"]["recentlyUpdated"] = true
     await customer.save()
 }

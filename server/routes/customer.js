@@ -87,14 +87,14 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const sort_on = param["sort_on"] || "createdAt"
         //specify other params here
-
+        const page = param["p"] || 0
+        const limit = param["l"] || 50
         const query = {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
             
             //add them in here
         }
-        let customers = await Customer.find(query).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
-        
+        let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
         // const fb_user = await getUserFromToken(request);
         if(request.user && request.user.role === "user"){
             const user = await User.findOne({firebaseUid:request.user.uid}).exec()

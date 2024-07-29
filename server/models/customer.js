@@ -475,7 +475,14 @@ export const customerDefaultValues = {
     status: "new",
     lastMatched: null,
     lastUpdated: null,
-    
+    placementFlags:{
+        premiumPlacement: false,
+        featuredPlacement: false,
+        recentlyUpdated: false,
+        newlyListed: true,
+        premiumExpires: null,
+        featuredExpires: null
+    }
 }
 
 
