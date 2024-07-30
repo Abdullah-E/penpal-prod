@@ -108,9 +108,36 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
         for(const update of updates){
             if(!update.customer) continue
             console.log("update", update)
+            // const updatedFields = {
+            //     "basicInfo":[],
+            //     "personalityInfo":[],
+            //     "photos":[]
+            // }
+            const updatedFields = []
+            for(const field in update.newBody){
+                if(typeof update.newBody[field] === "object"){
+                    updatedFields.push(...Object.keys(update.newBody[field]))
+                }   
+            }
+            const newBasicInfo = {
+                ...update.customer.basicInfo,
+                ...(update.newBody.basicInfo && Object.keys(update.newBody.basicInfo).length > 0 ? update.newBody.basicInfo : {})
+            }
+            const newPersonalityInfo = {
+                ...update.customer.personalityInfo,
+                ...(update.newBody.personalityInfo && Object.keys(update.newBody.personalityInfo).length > 0 ? update.newBody.personalityInfo : {})
+            }
+            const newPhotos = {
+                ...update.customer.photos,
+                ...(update.newBody.photos && Object.keys(update.newBody.photos).length > 0 ? update.newBody.photos : {})
+            }
+
             returnArr.push({
-                ...update.customer,...update.newBody,
-                updatedFields:Object.keys(update.newBody),
+                ...update.customer,
+                personalityInfo:newPersonalityInfo,
+                basicInfo:newBasicInfo,
+                photos:newPhotos,
+                updatedFields,
             })
         }
 
