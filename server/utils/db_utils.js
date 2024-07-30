@@ -83,19 +83,25 @@ export const findInsertionIndex = (array, score)=> {
 
 export const applyCustomerUpdate = async (customer, update) => {
     for(const field in update.newBody){
-        if(field === "personality"){
+
+        //handles personlaity and basicInfo
+        if(typeof update.newBody[field] === "object"){
             for(const subfield in update.newBody[field]){
                 customer[field][subfield] = update.newBody[field][subfield]
             }
             continue;
         }
-        customer[field] = update.newBody[field]
+        else if(update.newBody[field] === "photos"){
+            customer[field]["imageUrl"] = newBody[field]["imageUrl"]
+            customer[field]["artworks"].append(newBody[field]["artworks"])
+            continue;
+        }
+        
     }
     // await customer.updateOne({$unset:{customerUpdate:1}})
     delete customer._doc.customerUpdate
-    customer.lastUpdated = Date.now()
+    customer.customerStatus.lastUpdated = Date.now()
     
-    if(!customer.placementFlags) customer.placementFlags = {}
-    customer["placementFlags"]["recentlyUpdated"] = true
-    await customer.save()
+    customer["customerStatus"]["recentlyUpdated"] = true
+    return customer
 }

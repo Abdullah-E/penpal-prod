@@ -134,195 +134,182 @@ const STATUS_TYPES = [
 ]
 
 const customerSchema = new mongoose.Schema({
-    firstName: {
-        type: String,
-        required: true,
-        default: ""
-    },
-    lastName:{
-        type: String,
-        required: true,
-        default:""
-    },
-    inmateNumber:{
-        type:String,
-        required:true,
-        default:""
-    },
-    mailingAddress:{
-        type: String,
-        required: true,
-        default:""
-    },
-    email:{type:String, required:false, default:""},
-    city:{
-        type: String,
-        required: true,
-        default:""
-    },
-    state:{
-        type: String,
-        required: true,
-        default:""
-    },
-    zipcode:{
-        type: String,
-        required: true,
-        default:""
-    },
-    gender:{
-        type:String,
-        required:false,
-        enum:GENDER_TYPES,
-        default:GENDER_TYPES[0]
-    },
-    orientation:{
-        type:String,
-        required:false,
-        enum:ORIENTATION_TYPES,
-        default:ORIENTATION_TYPES[0]
-    },
-    race:{
-        type:String,
-        required:false,
-        enum:RACE_TYPES,
-        default:RACE_TYPES[0]
-    },
-    education:{
-        type:String,
-        required:false,
-        enum:EDUCATION_TYPES,
-        default:EDUCATION_TYPES[0]
-    },
-    age:{
-        type:String,
-        required:false,
-        default:""
-    },
-    dateOfBirth:{
-        type:Date,
-        required:false,
-        default: new Date(0)
-    },
-    height:{
-        type:String,
-        required:false,
-        default:""
-    },
-    weight:{
-        type: String,
-        required: false,
-        default:""
-    },
-    hairColor:{
-        type:String,
-        enum:HAIR_TYPES,
-        required:true
-    },
-    eyeColor:{
-        type:String,
-        enum:EYE_TYPES,
-        required:true
-    },
-    religiousPref:{
-        type:String,
-        required:false,
-        enum:RELIGION_TYPES,
-        default:RELIGION_TYPES[0]
-    },
-    bodyType:{
-        type:String,
-        required:false,
-        enum:BODY_TYPES,
-        default:BODY_TYPES[0]
-    },
-    astrologicalSign:{
-        type:String,
-        required:false,
-        enum:ASTROLOGICAL_SIGNS,
-        default:ASTROLOGICAL_SIGNS[0]
-    },
-    relationshipStatus:{
-        type:String,
-        required:false,
-        enum:RELATIONSHIP_TYPES,
-        default:RELATIONSHIP_TYPES[0]
-    },
-    veteranStatus:{
-        type:String,
-        required:false,
-        enum:VETERAN_TYPES,
-        default:VETERAN_TYPES[0]
-    },
-    institutionalEmailProvider:{
-        type:String,
-        required:false,
-        default:""
-    
-    },
-    hometown:{
-        type:String,
-        required:false,
-        default:""
-    },
-    spokenLanguages:{
-        type:[String],
-        required:false,
-        default:""
-    },
-    highSchool:{
-        type:String,
-        required:false,
-        default:""
-    },
-    highSchoolCity:{
-        type:String,
-        required:false,
-        default:""
-    },
-    highSchoolState:{
-        type:String,
-        required:false,
-        default:""
-    },
-    college:{
-        type:String,
-        required:false,
-        default:""
-    },
-    collegeCity:{
-        type:String,
-        required:false,
-        default:""
-    },
-    collegeState:{
-        type:String,
-        required:false,
-        default:""
-    },
-    profileComplete:{
-        type:Boolean,
-        required:true,
-        default:false
-    },
-    profileApproved:{
-        type:Boolean,
-        required:true,
-        default:false
-    },
+    basicInfo:{
+
+        firstName: {
+            type: String,
+            required: true,
+            default: ""
+        },
+        lastName:{
+            type: String,
+            required: true,
+            default:""
+        },
+        inmateNumber:{
+            type:String,
+            required:true,
+            default:""
+        },
+        mailingAddress:{
+            type: String,
+            required: true,
+            default:""
+        },
+        email:{type:String, required:false, default:""},
+        city:{
+            type: String,
+            required: true,
+            default:""
+        },
+        state:{
+            type: String,
+            required: true,
+            default:""
+        },
+        zipcode:{
+            type: String,
+            required: true,
+            default:""
+        },
+        gender:{
+            type:String,
+            required:false,
+            enum:GENDER_TYPES,
+            default:GENDER_TYPES[0]
+        },
+        orientation:{
+            type:String,
+            required:false,
+            enum:ORIENTATION_TYPES,
+            default:ORIENTATION_TYPES[0]
+        },
+        race:{
+            type:String,
+            required:false,
+            enum:RACE_TYPES,
+            default:RACE_TYPES[0]
+        },
+        education:{
+            type:String,
+            required:false,
+            enum:EDUCATION_TYPES,
+            default:EDUCATION_TYPES[0]
+        },
+        age:{
+            type:String,
+            required:false,
+            default:""
+        },
+        dateOfBirth:{
+            type:Date,
+            required:false,
+            default: new Date(0)
+        },
+        height:{
+            type:String,
+            required:false,
+            default:""
+        },
+        weight:{
+            type: String,
+            required: false,
+            default:""
+        },
+        hairColor:{
+            type:String,
+            enum:HAIR_TYPES,
+            required:true
+        },
+        eyeColor:{
+            type:String,
+            enum:EYE_TYPES,
+            required:true
+        },
+        religiousPref:{
+            type:String,
+            required:false,
+            enum:RELIGION_TYPES,
+            default:RELIGION_TYPES[0]
+        },
+        bodyType:{
+            type:String,
+            required:false,
+            enum:BODY_TYPES,
+            default:BODY_TYPES[0]
+        },
+        astrologicalSign:{
+            type:String,
+            required:false,
+            enum:ASTROLOGICAL_SIGNS,
+            default:ASTROLOGICAL_SIGNS[0]
+        },
+        relationshipStatus:{
+            type:String,
+            required:false,
+            enum:RELATIONSHIP_TYPES,
+            default:RELATIONSHIP_TYPES[0]
+        },
+        veteranStatus:{
+            type:String,
+            required:false,
+            enum:VETERAN_TYPES,
+            default:VETERAN_TYPES[0]
+        },
+        institutionalEmailProvider:{
+            type:String,
+            required:false,
+            default:""
+        
+        },
+        hometown:{
+            type:String,
+            required:false,
+            default:""
+        },
+        spokenLanguages:{
+            type:[String],
+            required:false,
+            default:""
+        },
+        highSchool:{
+            type:String,
+            required:false,
+            default:""
+        },
+        highSchoolCity:{
+            type:String,
+            required:false,
+            default:""
+        },
+        highSchoolState:{
+            type:String,
+            required:false,
+            default:""
+        },
+        college:{
+            type:String,
+            required:false,
+            default:""
+        },
+        collegeCity:{
+            type:String,
+            required:false,
+            default:""
+        },
+        collegeState:{
+            type:String,
+            required:false,
+            default:""
+        },
+    }, 
     pendingPayments:{
         creation:{type:Boolean, required:true, default:true},
         renewal:{type:Boolean, required:true, default:false},
         update:{type:Boolean, required:true, default:false},
         totalAmount:{type:Number, required:false, default:0}
     },
-    status:{
-        type:String,
-        required:false,
-        enum:STATUS_TYPES,
-        default:STATUS_TYPES[0]
-    },
-    personality:{
+    personalityInfo:{
         type:personalitySchema,
         required:false,
         default: () => ({})
@@ -371,23 +358,35 @@ const customerSchema = new mongoose.Schema({
         required: true,
         default: Date.now
     },
-    expiresAt:{
-        type: Date,
-        required: false
-    },
+    
     customerUpdate: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CustomerUpdates'
     },
-    lastMatched:{
-        type: Date,
-        required: false
-    },
-    lastUpdated:{
-        type: Date,
-        required: false
-    },
-    placementFlags:{
+    
+    customerStatus:{
+        status:{
+            type:String,
+            required:false,
+            enum:STATUS_TYPES,
+            default:STATUS_TYPES[0]
+        },
+        tag:{
+            type:String,
+            required:false,
+        },
+        profileApproved:{
+            type:Boolean,
+            required:true,
+            default:false
+        },
+        profileComplete:{
+            type:Boolean,
+            required:true,
+            default:false
+        },
+        wordLimitExtended:{type:Boolean, required:false, default:false},
+        imageLimitExtended:{type:Boolean, required:false, default:false},
         premiumPlacement:{
             type:Boolean,
             required:false,
@@ -408,7 +407,10 @@ const customerSchema = new mongoose.Schema({
             required:false,
             default:false
         },
-        
+        lastUpdated:{
+            type: Date,
+            required: false
+        },
         premiumExpires:{
             type: Date,
             required: false
@@ -416,45 +418,76 @@ const customerSchema = new mongoose.Schema({
         featuredExpires:{
             type: Date,
             required: false
-        }
-
-    }
+        },
+        lastMatched:{
+            type: Date,
+            required: false
+        },
+        expiresAt:{
+            type: Date,
+            required: false
+        },
+    },
 })
 
 export const customerDefaultValues = {
-    firstName: "",
-    lastName: "",
-    inmateNumber: "",
-    mailingAddress: "",
-    email: "",
-    city: "",
-    state: "",
-    zipcode: "",
-    gender: "",
-    orientation: "",
-    race: "",
-    education: "",
-    age: "",
-    dateOfBirth: new Date(0),
-    height: "",
-    weight: "",
-    hairColor: "",
-    eyeColor: "",
-    religiousPref: "",
-    bodyType: "",
-    astrologicalSign: "",
-    relationshipStatus: "",
-    veteranStatus: "",
-    institutionalEmailProvider: "",
-    hometown: "",
-    spokenLanguages: [],
-    highSchool: "",
-    highSchoolCity: "",
-    highSchoolState: "",
-    college: "",
-    collegeCity: "",
-    profileComplete: false,
-    personality: {},
+    basicInfo:{
+        firstName: "",
+        lastName: "",
+        inmateNumber: "",
+        mailingAddress: "",
+        email: "",
+        city: "",
+        state: "",
+        zipcode: "",
+        gender: "",
+        orientation: "",
+        race: "",
+        education: "",
+        age: "",
+        dateOfBirth: new Date(0),
+        height: "",
+        weight: "",
+        hairColor: "",
+        eyeColor: "",
+        religiousPref: "",
+        bodyType: "",
+        astrologicalSign: "",
+        relationshipStatus: "",
+        veteranStatus: "",
+        institutionalEmailProvider: "",
+        hometown: "",
+        spokenLanguages: [],
+        highSchool: "",
+        highSchoolCity: "",
+        highSchoolState: "",
+        college: "",
+        collegeCity: "",
+    },
+    pendingPayments:{
+        creation: true,
+        renewal: false,
+        update: false,
+        totalAmount: 0
+    },
+    customerStatus:{
+        profileComplete: false,
+        profileApproved: false,
+        premiumPlacement: false,
+        featuredPlacement: false,
+        recentlyUpdated: false,
+        newlyListed: true,
+        wordLimitExtended: false,
+        imageLimitExtended: false,
+        premiumExpires: null,
+        featuredExpires: null,
+        status: "new",
+        tag:"",
+        lastMatched: null,
+        lastUpdated: null,
+        expiresAt: null
+    },
+    personalityInfo: {},
     rating: null,
     ratingReal: null,
     numRatings: 0,
@@ -465,24 +498,6 @@ export const customerDefaultValues = {
     },
     imageId: "",
     createdAt: Date.now(),
-    pendingPayments:{
-        creation: true,
-        renewal: false,
-        update: false,
-        totalAmount: 0
-    },
-    profileApproved: false,
-    status: "new",
-    lastMatched: null,
-    lastUpdated: null,
-    placementFlags:{
-        premiumPlacement: false,
-        featuredPlacement: false,
-        recentlyUpdated: false,
-        newlyListed: true,
-        premiumExpires: null,
-        featuredExpires: null
-    }
 }
 
 

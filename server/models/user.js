@@ -13,9 +13,9 @@ function userComplete(user){
     "state",
     "bio"
     ]  
-    if(!user.personality){
+    if(!user.personalityInfo){
       return false
-    }else if(Object.keys(user.personality).length === 0){
+    }else if(Object.keys(user.personalityInfo).length === 0){
       return false
     }
     return fields_to_check.every(field => user[field] !== "")
@@ -90,7 +90,7 @@ const userSchema = new mongoose.Schema({
         required: false,
         default: ""
     },
-    personality:{
+    personalityInfo:{
         type:personalitySchema,
         required: false
     },
@@ -125,14 +125,14 @@ const userSchema = new mongoose.Schema({
 
 userSchema.pre('save', async function(next) {
     this.profileComplete = userComplete(this);
-    if (this.isModified('personality')) {
+    if (this.isModified('personalityInfo')) {
         const customers = await Customer.find().limit(50);
         const compatibilityScores = customers.map(customer => {
             // customer.lastMatched = new Date();
             // await customer.save();
             return {
                 customerId: customer._id,
-                score: calculateCompatibility(this.personality, customer.personality)
+                score: calculateCompatibility(this.personalityInfo, customer.personalityInfo)
             };
         });
 
