@@ -26,7 +26,11 @@ fastify.addHook('onRequest', async(request, reply)=>{
 
 const parseCustomerInfo = (body) => {
     const fields = Object.keys(body["basicInfo"])
-    const customer = {}
+    const customer = {
+        basicInfo:{},
+        personalityInfo:{},
+    }
+    console.log(fields)
     fields.forEach(field => {
         if(field === "spokenLanguages"){
             // console.log("skipping", field)
