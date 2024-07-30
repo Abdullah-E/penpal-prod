@@ -15,7 +15,7 @@ import Favorite from "../models/favorite.js";
 import { personalitySchema } from "../models/personality.js";
 
 import { verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings, flagCreated, flagUpdated } from "../utils/db_utils.js";
+import { flagFavorites, flagRatings, flagCreated, flagUpdated, calculateCompatibility } from "../utils/db_utils.js";
 import Purchase from "../models/purchase.js";
 
 // import {BASE_URL} from '../server.js'
@@ -195,7 +195,7 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
 });
 
 fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
-  const { personality } = request.body;
+  const { personalityInfo } = request.body;
   if (!request.user) {
     reply.code(401).send({
       data: null,
@@ -216,7 +216,7 @@ fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
       });
       return;
     }
-    user.personality = personality;
+    user.personalityInfo = personalityInfo;
     // user.profileComplete = true;
     await user.save();
     const userObj = user.toObject();
@@ -250,7 +250,7 @@ fastify.get(BASE_URL + "/user/personality", async (request, reply) => {
   }
   try {
     const user = await User.findOne({ firebaseUid: request.user.uid }).select({
-      personality: 1,
+      personalityInfo: 1,
     });
     if (!user) {
       reply.status(404).send({
@@ -264,7 +264,7 @@ fastify.get(BASE_URL + "/user/personality", async (request, reply) => {
 
     // const defaultPersonality =
     let userPersonality =
-      user.personality || new mongoose.model("temp", personalitySchema)();
+      user.personalityInfo || new mongoose.model("temp", personalitySchema)();
 
     userPersonality = userPersonality.toObject();
     delete userPersonality._id;
@@ -751,21 +751,7 @@ fastify.delete(BASE_URL + "/user", async (request, reply) => {
   });
 });
 
-function calculateCompatibility(userPersonality, customerPersonality) {
-  const fields = ["hobbies", "sports", "likes", "personality", "bookGenres", "musicGenres", "movieGenres"];
-  let totalMatches = 0;
-  let totalFields = fields.length;
 
-  fields.forEach(field => {
-      if (userPersonality[field].length && customerPersonality[field].length) {
-          const intersection = userPersonality[field].filter(value => customerPersonality[field].includes(value));
-          if (intersection.length) {
-              totalMatches++;
-          }
-      }
-  });
-  return (totalMatches / totalFields) * 100;
-}
 fastify.get(BASE_URL + "/user/update-compatibility", async (request, reply) => {
 
   if(!request.user){
@@ -782,7 +768,7 @@ fastify.get(BASE_URL + "/user/update-compatibility", async (request, reply) => {
   const compatibilityScores = customers.map(customer => {
       return {
           customerId: customer._id,
-          score: calculateCompatibility(user.personality, customer.personality)
+          score: calculateCompatibility(user.personalityInfo, customer.personalityInfo)
       }
   })
 

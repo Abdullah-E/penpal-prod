@@ -25,22 +25,21 @@ fastify.addHook('onRequest', async(request, reply)=>{
 })
 
 const parseCustomerInfo = (body) => {
-    const fields = Object.keys(body)
+    const fields = Object.keys(body["basicInfo"])
     const customer = {}
     fields.forEach(field => {
         if(field === "spokenLanguages"){
             // console.log("skipping", field)
-            customer[field] = body[field]
-            return
-        }else if(field === "photos"){
-            customer[field]["total"] = body[field]["artworks"].length + (body[field]["imageUrl"]?1:0) 
+            customer["basicInfo"][field] = body["basicInfo"][field]
             return
         }
-        customer[field] = Array.isArray(body[field]) ? body[field][0] : body[field]
-        customer[field] = customer[field] === undefined || 
-        customer[field] === "" ? 
-            (customerDefaultValues[field]?customerDefaultValues[field]:"" ): customer[field]
+        customer["basicInfo"][field] = Array.isArray(body["basicInfo"][field]) ? body["basicInfo"][field][0] : body["basicInfo"][field]
+        customer["basicInfo"][field] = customer["basicInfo"][field] === undefined || 
+        customer["basicInfo"][field] === "" ? 
+            (customerDefaultValues["basicInfo"][field]?customerDefaultValues["basicInfo"][field]:"" ): customer["basicInfo"][field]
     })
+    customer["personalityInfo"] = body["personalityInfo"]
+    customer["photos"] = body["photos"]
     return customer
 
 }
@@ -276,7 +275,7 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
         const n = request.query.n || 5;
         const customers = await Customer.aggregate([
             {$match:{profileApproved:true, status:"active"}},
-            {$project:{_id:0, firstName:1, lastName:1, rating:1, profilePic:1, age:1, state:1, imageUrl:1, tag:1}},
+            {$project:{_id:0, "bascicInfo.firstName":1, "basicInfo.lastName":1, rating:1, "photos.imageUrl":1, "basicInfo.age":1, "basicInfo.state":1, "basicInfo.tag":1}},
             {$sample:{size:parseInt(n)}},
         ]).exec();
 

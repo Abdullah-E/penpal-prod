@@ -38,7 +38,7 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
 
         const query = {
             ...(id && id.length > 0 ? {_id:{$in:id}} : {}),
-            ...(param["approved"]?{profileApproved:approvedBool}:{}),
+            ...(param["approved"]?{"customerStatus.profileApproved":approvedBool}:{}),
         }
         
         const customers = await Customer.find(query).exec();
@@ -68,7 +68,10 @@ fastify.put(BASE_URL+"/admin/approve-customer", async (request, reply) => {
         }
         
         const customers = await Customer.updateMany(query, {
-            profileApproved:true, createdAt:Date.now(), expiresAt:Date.now() + 1000*60*60*24*365, "placementFlags.newlyListed":true
+            "customerStatus.profileApproved":true, 
+            createdAt:Date.now(), 
+            "customerStatus.expiresAt":Date.now() + 1000*60*60*24*365, 
+            "customerStatus.newlyListed":true
         }, {new:true}).lean().exec()
         reply.send({
             data: customers,
