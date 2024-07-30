@@ -25,12 +25,12 @@ fastify.addHook('onRequest', async(request, reply)=>{
 })
 
 const parseCustomerInfo = (body) => {
-    const fields = Object.keys(body["basicInfo"])
+    
+    const fields = body["basicInfo"]?Object.keys(body["basicInfo"]):[]
     const customer = {
-        basicInfo:{},
-        personalityInfo:{},
+        basicInfo:{}
+        // personalityInfo:{},
     }
-    console.log(fields)
     fields.forEach(field => {
         if(field === "spokenLanguages"){
             // console.log("skipping", field)
@@ -56,6 +56,14 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         // console.log(fieldsFromRequest)
         // const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
         let newCust = new Customer({...customerDefaultValues, ...fieldsFromRequest})
+        newCust.photos.total = newCust.photos.artworks.length + 1
+        if(newCust.basicInfo.bio.split(" ").length > 350 && !cust.customerStatus.wordLimitExtended){
+            newCust.pendingPayments.wordLimit = true
+        }
+        if(newCust.photos.total > newCust.customerStatus.imageLimit){
+            newCust.pendingPayments.photo = true
+            newCust.pendingPayments.photoNum = newCust.photos.total - newCust.customerStatus.imageLimit
+        }
         newCust = await updatePendingPayments(newCust)
         await newCust.save()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
@@ -139,18 +147,23 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const {id} = request.query
         const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
-        if(!userToUpdate.createdCustomers.includes(id)){
-            return reply.code(403).send({
-                data:null,
-                message:"Unauthorized - Not creator of customer",
-                event_code:0,
-                status_code:403
-            })
-        }
+        // if(!userToUpdate.createdCustomers.includes(id)){
+        //     return reply.code(403).send({
+        //         data:null,
+        //         message:"Unauthorized - Not creator of customer",
+        //         event_code:0,
+        //         status_code:403
+        //     })
+        // }
         let customerToUpdate = await Customer.findOne({_id:id}).exec();
         let newUpdate
         if(customerToUpdate.customerUpdate){
-            newUpdate=await CustomerUpdate.findOne({_id:customerToUpdate.customerUpdate}).exec()
+            return reply.code(400).send({
+                data:null,
+                message:"Customer already has a pending update",
+                event_code:0,
+                status_code:400
+            })
             // console.log(newUpdate)
         }else{
             newUpdate = new CustomerUpdate({
@@ -159,24 +172,46 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             })
             customerToUpdate.customerUpdate = newUpdate._id
             customerToUpdate.pendingPayments.update = true
-            customerToUpdate = updatePendingPayments(customerToUpdate)
-            await customerToUpdate.save()
         }
         // const userUpdate = await User.findOneAndUpdate(
-        //     {firebaseUid:request.user.uid}, {$addToSet:{customerUpdates:newUpdate._id}}, {new:true}
-        // )
-        if(!userToUpdate.customerUpdates.includes(newUpdate._id)){
-            userToUpdate.customerUpdates.push(newUpdate._id)
-        }
-        await userToUpdate.save()
+            //     {firebaseUid:request.user.uid}, {$addToSet:{customerUpdates:newUpdate._id}}, {new:true}
+            // )
+            if(!userToUpdate.customerUpdates.includes(newUpdate._id)){
+                userToUpdate.customerUpdates.push(newUpdate._id)
+            }
+            await userToUpdate.save()
+            
+            newUpdate.customer = id
+            newUpdate.user = userToUpdate._id
+            
+            // const {_id, ...rest} = customerToUpdate
+            newUpdate.newBody = parseCustomerInfo(request.body)
 
-        newUpdate.customer = id
-        newUpdate.user = userToUpdate._id
-
-        // const {_id, ...rest} = customerToUpdate
-        newUpdate.newBody = parseCustomerInfo(request.body)
-        await newUpdate.save()
-
+            let fieldsCount = 0
+            if(newUpdate.newBody.basicInfo){
+                
+                fieldsCount += Object.keys(newUpdate.newBody.basicInfo).length
+                
+                if(newUpdate.newBody.basicInfo.bio?.split(" ").length > 350 && !customerToUpdate.customerStatus.wordLimitExtended){
+                    customerToUpdate.pendingPayments.wordLimit = true
+                }
+            }
+            if(newUpdate.newBody.personalityInfo){
+                fieldsCount += Object.keys(newUpdate.newBody.personalityInfo).length
+            }
+            if(newUpdate.newBody.photos){
+                const newPhotosCount = newUpdate.newBody.photos.artworks?.length + (customerToUpdate.photos.imageUrl?1:0) +customerToUpdate.photos.artworks.length
+                console.log("new photos count", newPhotosCount)
+                if(newPhotosCount > customerToUpdate.customerStatus.photoLimit){
+                    customerToUpdate.pendingPayments.photo = true
+                    customerToUpdate.pendingPayments.photoNum = newPhotosCount - customerToUpdate.customerStatus.photoLimit
+                }
+            }
+            customerToUpdate.pendingPayments.updateNum  = fieldsCount
+            customerToUpdate = updatePendingPayments(customerToUpdate)
+            await newUpdate.save()
+            await customerToUpdate.save()
+            
         reply.code(200).send({
             data:newUpdate,
             message:"Customer update requested successfully",
@@ -186,7 +221,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     }catch(error){
         console.error(error)
         reply.code(400).send({
-            message:"Customer not updated",
+            message:`Customer not updated ${error.message}`,
             event_code:0,
             status_code:400,
             data:null

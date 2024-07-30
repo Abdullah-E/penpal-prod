@@ -316,6 +316,10 @@ const customerSchema = new mongoose.Schema({
         creation:{type:Boolean, required:true, default:true},
         renewal:{type:Boolean, required:true, default:false},
         update:{type:Boolean, required:true, default:false},
+        updateNum:{type:Number, required:true, default:0},
+        wordLimit:{type:Boolean, required:true, default:false},
+        photo:{type:Boolean, required:true, default:false},
+        photoNum:{type:Number, required:true, default:0},
         totalAmount:{type:Number, required:false, default:0}
     },
     personalityInfo:{
@@ -395,7 +399,7 @@ const customerSchema = new mongoose.Schema({
             default:false
         },
         wordLimitExtended:{type:Boolean, required:false, default:false},
-        imageLimitExtended:{type:Boolean, required:false, default:false},
+        photoLimit:{type:Number, required:false, default:3},
         premiumPlacement:{
             type:Boolean,
             required:false,
@@ -478,6 +482,10 @@ export const customerDefaultValues = {
         creation: true,
         renewal: false,
         update: false,
+        updateNum: 0,
+        wordLimit: false,
+        photo: false,
+        photoNum: 0,
         totalAmount: 0
     },
     customerStatus:{
@@ -488,7 +496,7 @@ export const customerDefaultValues = {
         recentlyUpdated: false,
         newlyListed: true,
         wordLimitExtended: false,
-        imageLimitExtended: false,
+        photoLimit: 3,
         premiumExpires: null,
         featuredExpires: null,
         status: "new",
@@ -530,6 +538,17 @@ export const updatePendingPayments = function(cust) {
         console.log('product', product);
         if (product) cust.pendingPayments.totalAmount += product.price;
     }
+    if(cust.pendingPayments.wordLimit){
+        const product = products_cache.find(p => p.name === 'wordLimit');
+        if (product) cust.pendingPayments.totalAmount += product.price;
+    }
+    if(cust.pendingPayments.photo){
+        const product = products_cache.find(p => p.name === 'photo');
+        const photoPrice = cust.pendingPayments.photoNum * product.price;
+        if (product) cust.pendingPayments.totalAmount += photoPrice;
+    }
+    //totalAMount to 2 decimal:
+    cust.pendingPayments.totalAmount = cust.pendingPayments.totalAmount.toFixed(2);
     return cust;
 };
 
