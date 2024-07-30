@@ -15,7 +15,11 @@ const EYE_TYPES = [
 const GENDER_TYPES = [
     "Other",
     "Male",
-    "Female"
+    "Female",
+    "Transgender Male to Female",
+    "Transgender Females to Male",
+    "Gender Non Conforming/Non binary",
+
 ]
 
 const ORIENTATION_TYPES = [
