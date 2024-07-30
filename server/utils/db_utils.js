@@ -85,15 +85,19 @@ export const applyCustomerUpdate = async (customer, update) => {
     for(const field in update.newBody){
 
         //handles personlaity and basicInfo
-        if(typeof update.newBody[field] === "object"){
+        if(field === "photos"){
+            
+            customer[field]["imageUrl"] = update.newBody[field]["imageUrl"]?update.newBody[field]["imageUrl"]:customer[field]["imageUrl"]
+
+            customer[field]["artworks"].push(...update.newBody[field]["artworks"])
+            customer[field]["total"] = customer[field]["artworks"].length + (customer[field]["imageUrl"]?1:0)
+            continue;
+        }
+        else if(typeof update.newBody[field] === "object"){
+            console.log("field", field)
             for(const subfield in update.newBody[field]){
                 customer[field][subfield] = update.newBody[field][subfield]
             }
-            continue;
-        }
-        else if(update.newBody[field] === "photos"){
-            customer[field]["imageUrl"] = newBody[field]["imageUrl"]
-            customer[field]["artworks"].push(...newBody[field]["artworks"])
             continue;
         }
         
