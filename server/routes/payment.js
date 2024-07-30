@@ -25,22 +25,50 @@ fastify.addHook('onRequest', async (request, reply) => {
 // const product_names = ['creation', 'renewal', 'update']
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
     try{
-        //creatoin renewal update are boolean values
-        const {creation,renewal,update, cid} = request.body
+
+        const {cid, update, total} = request.body
         const boughtProducts = []
-        if(creation) boughtProducts.push('creation')
-        if(renewal) boughtProducts.push('renewal')
-        if(update) boughtProducts.push('update')
+
+        for(const key of Object.keys(request.body)){
+            if(typeof request.body[key]  === typeof true){
+                if(request.body[key]){
+                    boughtProducts.push(key)
+                }
+            }
+        }
+        if(update.status) boughtProducts.push('update')
 
         const products = await Product.find({name: boughtProducts}).exec()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
 
+        let totalAmount = 0
+        const productsList = []
         const line_items = products.map(product => {
+            if(product.name === 'update'){
+                productsList.push({
+                    product: product._id,
+                    quantity: update.num,
+                    price: product.price
+                })
+                totalAmount += product.price * update.num
+                return {
+                    price: product.priceId,
+                    quantity: parseInt(update.num)
+                }
+            }
+            totalAmount += product.price
+            productsList.push({
+                product: product._id,
+                quantity: 1,
+                price: product.price
+            })
             return {
                 price: product.priceId,
                 quantity: 1
             }
+
         })
+
         if(line_items.length === 0){
             return reply.status(400).send({
                 message: 'No products found',
@@ -57,22 +85,18 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             line_items: line_items,
             return_url: `http://localhost:5000/payment/result?session_id={CHECKOUT_SESSION_ID}`,
         })
-        for(let product of products){
-
-            const newPurchase = new Purchase({
-                user: user._id,
-                product: product._id,
-                customer: cid,
-                sessionId: session.id,
-                quantity: 1,
-                total: product.price,
-                status: 'open',
-            })
+        
+        const newPurchase = new Purchase({
+            user: user._id,
+            products: productsList,
+            customer: cid,
+            sessionId: session.id,
+            totalPrice: totalAmount,
+            status: 'open',
+        })
+        await newPurchase.save()
     
-            await newPurchase.save()
-        }
-        // console.log(session)
-        reply.send({
+        return reply.send({
             data:{
                 clientSecret: session.client_secret,
                 status:session.status
@@ -108,34 +132,29 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             event_code:1
         })
 
-        const purchases = await Purchase.find({sessionId: session_id}).exec()
+        const purchase = await Purchase.findOne({sessionId: session_id}).exec()
         // const purchase = await Purchase.findOne({sessionId: session_id}).exec()
         if(session.status !== 'completed'){
             return
         }
-        for(const purchase of purchases){
-            purchase.status = session.status
-            purchase.paidAt = new Date()
-            const customer = await Customer.findOne({_id: purchase.customer}).exec()
-            if(purchase.product === 'creation'){
-                // await Customer.updateOne({_id: purchase.customer}, {
-                //     pendingPayments: {
-
-                //     },
-                //     status:'active',
-                //     expiresAt: new Date(Date.now() + 30*24*60*60*1000)
-                // }).exec()
+        purchase.paidAt = new Date()
+        const customer = await Customer.findOne({_id: purchase.customer}).popoulate('products.product').exec()
+        for(const product of purchase.products){
+            // purchase.status = session.status
+            if(product.name === 'creation'){
                 customer.pendingPayments.creation = false
                 customer.status = 'active'
-                customer.expiresAt = new Date(Date.now() + 30*24*60*60*1000)
+                //a year after current date
+                // const date = Date.now()
+                // customer.expiresAt = new Date(date.setFullYear(date.getFullYear() + 1))
 
             }
-            else if(purchase.product === 'renewal'){
+            else if(product.name === 'renewal'){
                 customer.pendingPayments.renewal = false
-                customer.expiresAt = new Date(customer.expiresAt.getTime() + 30*24*60*60*1000)
+                customer.expiresAt = new Date(customer.expiresAt.setFullYear(customer.expiresAt.getFullYear() + 1))
                 customer.status = 'active'
             }
-            else if(purchase.product === 'update'){
+            else if(product.name === 'update'){
                 // const custToUpdate = await Customer.findOne({_id: purchase.customer})
                 const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
                 update.paymentPending = false

@@ -343,10 +343,23 @@ const customerSchema = new mongoose.Schema({
         required:false,
         default:0
     },
-    imageUrl:{
-        type:String,
-        required:false,
-        default:""
+    photos:{
+        imageUrl:{
+            type:String,
+            required:false,
+            default:""
+        },
+        artworks:{
+            type:[String],
+            required:false,
+            default:""
+        },
+        total:{
+            type:Number,
+            required:false,
+            default:0
+        }
+
     },
     imageId:{
         type:String,
@@ -374,14 +387,38 @@ const customerSchema = new mongoose.Schema({
         type: Date,
         required: false
     },
-    tag:{
-        type: String, required: false, default: ""
-    },
-    tier:{
-        type: String,
-        required: false,
-        default: "basic"
-    },
+    placementFlags:{
+        premiumPlacement:{
+            type:Boolean,
+            required:false,
+            default:false
+        },
+        featuredPlacement:{
+            type:Boolean,
+            required:false,
+            default:false
+        },
+        recentlyUpdated:{
+            type:Boolean,
+            required:false,
+            default:false
+        },
+        newlyListed:{
+            type:Boolean,
+            required:false,
+            default:false
+        },
+        
+        premiumExpires:{
+            type: Date,
+            required: false
+        },
+        featuredExpires:{
+            type: Date,
+            required: false
+        }
+
+    }
 })
 
 export const customerDefaultValues = {
@@ -421,7 +458,11 @@ export const customerDefaultValues = {
     rating: null,
     ratingReal: null,
     numRatings: 0,
-    imageUrl: "",
+    photos:{
+        imageUrl: "",
+        artworks: [],
+        total: 0
+    },
     imageId: "",
     createdAt: Date.now(),
     pendingPayments:{
@@ -434,8 +475,14 @@ export const customerDefaultValues = {
     status: "new",
     lastMatched: null,
     lastUpdated: null,
-    tag: "",
-    tier: "basic"
+    placementFlags:{
+        premiumPlacement: false,
+        featuredPlacement: false,
+        recentlyUpdated: false,
+        newlyListed: true,
+        premiumExpires: null,
+        featuredExpires: null
+    }
 }
 
 
@@ -460,6 +507,9 @@ export const updatePendingPayments = function(cust) {
     }
     return cust;
 };
+
+const DeletedCustomer = mongoose.model('DeletedCustomer', customerSchema)
+export {DeletedCustomer}
 
 const Customer = mongoose.model('Customer', customerSchema)
 export default Customer

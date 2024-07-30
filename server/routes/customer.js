@@ -1,7 +1,10 @@
 import { fastify, BASE_URL } from "./init.js";
-import Customer, {customerDefaultValues, updatePendingPayments} from "../models/customer.js";
+import mongoose from "mongoose";
+
+import Customer, {customerDefaultValues, updatePendingPayments, DeletedCustomer} from "../models/customer.js";
 import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdate.js";
+import Favorite from "../models/favorite.js";
 
 import {verifyToken } from "../utils/firebase_utils.js";
 import { flagFavorites, flagRatings, flagCreated, flagUpdated } from "../utils/db_utils.js";
@@ -28,6 +31,9 @@ const parseCustomerInfo = (body) => {
         if(field === "spokenLanguages"){
             // console.log("skipping", field)
             customer[field] = body[field]
+            return
+        }else if(field === "photos"){
+            customer[field]["total"] = body[field]["artworks"].length + (body[field]["imageUrl"]?1:0) 
             return
         }
         customer[field] = Array.isArray(body[field]) ? body[field][0] : body[field]
@@ -81,14 +87,14 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const sort_on = param["sort_on"] || "createdAt"
         //specify other params here
-
+        const page = param["p"] || 0
+        const limit = param["l"] || 50
         const query = {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
             
             //add them in here
         }
-        let customers = await Customer.find(query).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
-        
+        let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
         // const fb_user = await getUserFromToken(request);
         if(request.user && request.user.role === "user"){
             const user = await User.findOne({firebaseUid:request.user.uid}).exec()
@@ -329,4 +335,80 @@ fastify.delete(BASE_URL + '/customer/allupdates', async(request, reply)=>{
         event_code:1,
         status_code:200
     })
+})
+
+/*customer is present in user: 
+createdCustomers, 
+ratings,
+favorite,
+compatibleCustomers,
+
+as customer field in
+customerUpdate.customer
+favorite.favorites
+*/
+
+fastify.delete(BASE_URL + '/customer', async(request, reply)=>{
+    try{
+        const {id} = request.query;
+        // const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
+        if(request.user.role !== "admin"){
+            return reply.code(403).send({
+                data:null,
+                message:"Unauthorized - Admin only",
+                event_code:0,
+                status_code:403
+            })
+        }
+        // const customerToDelete = await Customer.findOneAndDelete({_id:id}).exec();
+        const customerToDelete = await Customer.findOne({_id:id}).exec();
+        
+        if(customerToDelete){
+            
+            const deletedCustomer = new DeletedCustomer(customerToDelete.toObject())
+            deletedCustomer.deletedAt = new Date()
+            deletedCustomer._id = new mongoose.Types.ObjectId()
+            await deletedCustomer.save()
+            // await customerToDelete.remove()
+            await Customer.deleteOne({_id:id}).exec() 
+        }
+
+        
+        await User.updateMany(
+            {},
+            {$pull:{createdCustomers:id}, $pull:{compatibleCustomers:id}, $pull:{ratings:{customerId:id}}},
+        ).exec()
+        
+
+        // user.createdCustomers = user.createdCustomers.filter(c => c.toString() !== id)
+        // user.favorite.favorites = user.favorite.favorites.filter(f => f.toString() !== id)
+        await Favorite.updateMany(
+            {},
+            {$pull:{favorites:id}}
+        ).exec()
+
+        await CustomerUpdate.deleteMany({customer:id}).exec()
+        // user.compatibleCustomers = user.compatibleCustomers.filter(c => c.toString() !== id)
+        // user.ratings = user.ratings.filter(r => r.customerId.toString() !== id)
+
+        // await User.updateOne(
+        //     {firebaseUid:request.user.uid},
+        //     user
+        // ).exec()
+
+        return reply.code(200).send({
+            data:customerToDelete,
+            message:"Customer deleted successfully",
+            event_code:1,
+            status_code:200
+        });
+    }catch(error){
+        console.error(error)
+        return reply.code(400).send({
+            message:"Customer not deleted",
+            event_code:0,
+            status_code:400,
+            data:null
+        });
+    }
 })

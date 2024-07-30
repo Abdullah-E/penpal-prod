@@ -14,20 +14,16 @@ const purchaseSchema = new mongoose.Schema({
         ref: 'Customer',
         required: true
     },
-    product:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
-        required: true
-    },
+    products:[{
+        product:{type:mongoose.Schema.Types.ObjectId, ref:'Product', required: true},
+        quantity:{type: Number, required: true},
+        price:{type: Number, required: true}
+    }],
     sessionId:{
         type: String,
         required: true
     },
-    quantity: {
-        type: Number,
-        required: true
-    },
-    total: {
+    totalPrice: {
         type: Number,
         required: true
     },

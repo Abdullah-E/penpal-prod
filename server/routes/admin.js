@@ -66,8 +66,10 @@ fastify.put(BASE_URL+"/admin/approve-customer", async (request, reply) => {
         const query = {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
         }
-    
-        const customers = await Customer.updateMany(query, {profileApproved:true, createdAt:Date.now()}, {new:true}).lean().exec()
+        
+        const customers = await Customer.updateMany(query, {
+            profileApproved:true, createdAt:Date.now(), expiresAt:Date.now() + 1000*60*60*24*365, "placementFlags.newlyListed":true
+        }, {new:true}).lean().exec()
         reply.send({
             data: customers,
             message: `Customers approved successfully`,
@@ -101,6 +103,8 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
         const updates = await CustomerUpdate.find(query).populate("customer").populate("user").lean().exec()
         const returnArr = []
         for(const update of updates){
+            if(!update.customer) continue
+            console.log("update", update)
             returnArr.push({
                 ...update.customer,...update.newBody,
                 updatedFields:Object.keys(update.newBody),
