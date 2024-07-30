@@ -93,7 +93,7 @@ export const applyCustomerUpdate = async (customer, update) => {
         }
         else if(update.newBody[field] === "photos"){
             customer[field]["imageUrl"] = newBody[field]["imageUrl"]
-            customer[field]["artworks"].append(newBody[field]["artworks"])
+            customer[field]["artworks"].push(...newBody[field]["artworks"])
             continue;
         }
         

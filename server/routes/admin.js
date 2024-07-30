@@ -167,15 +167,19 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
         }
     
-        const customersToUpdate = await Customer.find(query).exec()
+        const customersToUpdate = await Customer.find(query).populate("customerUpdate").exec()
         const updatedCustomers = []
-        for(const customer of customersToUpdate){
-            const update = await CustomerUpdate.findById(customer.customerUpdate)
-            if(!update){
-                console.error("Update not found for customer", customer._id)
+        for(let customer of customersToUpdate){
+            if(!customer.customerUpdate){
+                console.error("No update found for customer", customer._id)
                 continue
             }
-            if(!update.paymentPending){
+            const update = await CustomerUpdate.findById(customer.customerUpdate._id)
+            // if(!update){
+            //     console.error("Update not found for customer", customer._id)
+            //     continue
+            // }
+            
                 // for(const field in update.newBody){
                 //     customer[field] = update.newBody[field]
                 // }
@@ -183,8 +187,9 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
                 // delete customer._doc.customerUpdate
                 // customer.lastUpdated = Date.now()
                 // await customer.save()
-                await applyCustomerUpdate(customer, update)
-            }
+            customer = await applyCustomerUpdate(customer, update)
+            await customer.save()
+
             update.updateApproved = true
             updatedCustomers.push(customer)
             await update.save()
