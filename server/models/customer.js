@@ -176,6 +176,11 @@ const customerSchema = new mongoose.Schema({
             required: true,
             default:""
         },
+        bio:{
+            type: String,
+            required: false,
+            default:""
+        },
         gender:{
             type:String,
             required:false,
@@ -444,6 +449,7 @@ export const customerDefaultValues = {
         city: "",
         state: "",
         zipcode: "",
+        bio: "",
         gender: "",
         orientation: "",
         race: "",
