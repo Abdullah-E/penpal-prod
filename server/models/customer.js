@@ -381,69 +381,22 @@ const customerSchema = new mongoose.Schema({
     },
     
     customerStatus:{
-        status:{
-            type:String,
-            required:false,
-            enum:STATUS_TYPES,
-            default:STATUS_TYPES[0]
-        },
-        tag:{
-            type:String,
-            required:false,
-        },
-        profileApproved:{
-            type:Boolean,
-            required:true,
-            default:false
-        },
-        profileComplete:{
-            type:Boolean,
-            required:true,
-            default:false
-        },
+        status:{type:String,required:false,enum:STATUS_TYPES,default:STATUS_TYPES[0]},
+        tag:{type:String,required:false,},
+        profileApproved:{type:Boolean,required:true,default:false},
+        profileComplete:{type:Boolean,required:true,default:false},
         wordLimitExtended:{type:Boolean, required:false, default:false},
         bioWordLimit:{type:Number, required:false, default:350},
         photoLimit:{type:Number, required:false, default:3},
-        premiumPlacement:{
-            type:Boolean,
-            required:false,
-            default:false
-        },
-        featuredPlacement:{
-            type:Boolean,
-            required:false,
-            default:false
-        },
-        recentlyUpdated:{
-            type:Boolean,
-            required:false,
-            default:false
-        },
-        newlyListed:{
-            type:Boolean,
-            required:false,
-            default:false
-        },
-        lastUpdated:{
-            type: Date,
-            required: false
-        },
-        premiumExpires:{
-            type: Date,
-            required: false
-        },
-        featuredExpires:{
-            type: Date,
-            required: false
-        },
-        lastMatched:{
-            type: Date,
-            required: false
-        },
-        expiresAt:{
-            type: Date,
-            required: false
-        },
+        premiumPlacement:{type:Boolean,required:false,default:false},
+        featuredPlacement:{type:Boolean,required:false,default:false},
+        recentlyUpdated:{type:Boolean,required:false,default:false},
+        newlyListed:{type:Boolean,required:false,default:false},
+        lastUpdated:{type: Date,required: false},
+        premiumExpires:{type: Date,required: false},
+        featuredExpires:{type: Date,required: false},
+        lastMatched:{type: Date,required: false},
+        expiresAt:{type: Date,required: false},
     },
 })
 

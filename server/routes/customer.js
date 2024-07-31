@@ -56,15 +56,15 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         // console.log(fieldsFromRequest)
         // const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
         let newCust = new Customer({...customerDefaultValues, ...fieldsFromRequest})
-        newCust.photos.total = newCust.photos.artworks.length + 1
+        // newCust.photos.total = newCust.photos.artworks.length + 1
         // const bioWordCount = newCust.basicInfo.bio.split(" ").length
         // if(bioWordCount > newCust.customerStatus.bioWordLimit){
         //     newCust.pendingPayments.wordLimit = Math.ceil(bioWordCount/350)>1?Math.ceil(bioWordCount/350)-1:0
         // }
 
-        if(request.body.wordLimit > 0){
-            newCust.pendingPayments.wordLimit = request.body.wordLimit
-        }
+        // if(request.body.wordLimit > 0){
+        newCust.pendingPayments.wordLimit = request.body.wordLimit
+        // }
 
         if(request.body.totalPaidPhotos >0){
             newCust.pendingPayments.totalPaidPhotos = request.body.totalPaidPhotos
@@ -221,7 +221,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
 
             fieldsCount += updatedFields.length
             if(newUpdate.newBody.basicInfo.bio){
-                customerToUpdate.pendingPayments.wordLimit = request.body.wordLimit
+                customerToUpdate.pendingPayments.wordLimit += request.body.wordLimit
             }
            
         }
@@ -246,7 +246,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             //     customerToUpdate.pendingPayments.updatedPhotos = photosInNewBody
             // }
             customerToUpdate.pendingPayments.photo = true
-            customerToUpdate.pendingPayments.totalPaidPhotos = request.body.totalPaidPhotos
+            customerToUpdate.pendingPayments.totalPaidPhotos += request.body.totalPaidPhotos
         }
         customerToUpdate.pendingPayments.updateNum  = fieldsCount
         customerToUpdate = updatePendingPayments(customerToUpdate)
