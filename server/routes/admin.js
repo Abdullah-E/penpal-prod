@@ -175,18 +175,7 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
                 continue
             }
             const update = await CustomerUpdate.findById(customer.customerUpdate._id)
-            // if(!update){
-            //     console.error("Update not found for customer", customer._id)
-            //     continue
-            // }
-            
-                // for(const field in update.newBody){
-                //     customer[field] = update.newBody[field]
-                // }
-                // await customer.updateOne({$unset:{customerUpdate:1}})
-                // delete customer._doc.customerUpdate
-                // customer.lastUpdated = Date.now()
-                // await customer.save()
+   
             customer = await applyCustomerUpdate(customer, update)
             await customer.save()
 
@@ -197,6 +186,48 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
         reply.send({
             data: updatedCustomers.length === 1 ? updatedCustomers[0] : updatedCustomers,
             message: `Update${updatedCustomers.length>1?"s":""} approved successfully`,
+            event_code: 1,
+            status_code: 200
+        })
+    }
+    catch(err){
+        console.error(err)
+        reply.code(500).send({
+            data:null,
+            message:err.message,
+            status_code:500,
+            event_code:0
+        })
+    }
+})
+
+fastify.put(BASE_URL+"/admin/reject-update", async (request, reply) => {
+    try{
+        const param = request.query
+        const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const query = {
+            ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+        }
+    
+        const customersToUpdate = await Customer.find(query).populate("customerUpdate").exec()
+        const updatedCustomers = []
+        for(let customer of customersToUpdate){
+            if(!customer.customerUpdate){
+                console.error("No update found for customer", customer._id)
+                continue
+            }
+
+            // const update = await CustomerUpdate.findById(customer.customerUpdate._id)
+            // update.updateApproved = false
+            // delete customer._doc.customerUpdate
+            customer.customerUpdate = undefined
+            updatedCustomers.push(customer)
+
+            await customer.save()
+        }
+        reply.send({
+            data: updatedCustomers.length === 1 ? updatedCustomers[0] : updatedCustomers,
+            message: `Update${updatedCustomers.length>1?"s":""} rejected successfully`,
             event_code: 1,
             status_code: 200
         })

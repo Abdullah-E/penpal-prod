@@ -103,6 +103,7 @@ export const applyCustomerUpdate = async (customer, update) => {
         
     }
     // await customer.updateOne({$unset:{customerUpdate:1}})
+    customer.customerUpdate = undefined
     delete customer._doc.customerUpdate
     customer.customerStatus.lastUpdated = Date.now()
     
