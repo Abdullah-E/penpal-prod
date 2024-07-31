@@ -221,14 +221,15 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             fieldsCount += updatedFields.length
         }
         if(newUpdate.newBody.photos){
-            fieldsCount +=  newUpdate.newBody.photos.artworks?.length + (newUpdate.newBody.photos.imageUrl?1:0)
+            const photosInNewBody = newUpdate.newBody.photos.artworks?.length + (newUpdate.newBody.photos.imageUrl?1:0)
+            fieldsCount +=  photosInNewBody
             const newPhotosCount = newUpdate.newBody.photos.artworks?.length + (customerToUpdate.photos.imageUrl?1:0) +customerToUpdate.photos.artworks.length
 
             console.log("new photos count", newPhotosCount)
             if(newPhotosCount > customerToUpdate.customerStatus.photoLimit){
                 customerToUpdate.pendingPayments.photo = true
                 customerToUpdate.pendingPayments.extraPhotos = newPhotosCount - customerToUpdate.customerStatus.photoLimit
-                customerToUpdate.pendingPayments.updatedPhotos = newPhotosCount
+                customerToUpdate.pendingPayments.updatedPhotos = photosInNewBody
             }
         }
         customerToUpdate.pendingPayments.updateNum  = fieldsCount
