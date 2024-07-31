@@ -57,12 +57,14 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         // const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
         let newCust = new Customer({...customerDefaultValues, ...fieldsFromRequest})
         newCust.photos.total = newCust.photos.artworks.length + 1
-        if(newCust.basicInfo.bio.split(" ").length > 350 && !newCust.customerStatus.wordLimitExtended){
-            newCust.pendingPayments.wordLimit = true
+        const bioWordCount = newCust.basicInfo.bio.split(" ").length
+        if(bioWordCount > newCust.customerStatus.bioWordLimit){
+            newCust.pendingPayments.wordLimit = Math.ceil(bioWordCount/350)>1?Math.ceil(bioWordCount/350)-1:0
         }
-        if(newCust.photos.total > newCust.customerStatus.imageLimit){
+        
+        if(newCust.photos.total > newCust.customerStatus.photoLimit){
             newCust.pendingPayments.photo = true
-            newCust.pendingPayments.photoNum = newCust.photos.total - newCust.customerStatus.imageLimit
+            newCust.pendingPayments.extraPhotos = newCust.photos.total - newCust.customerStatus.photoLimit
         }
         newCust = await updatePendingPayments(newCust)
         await newCust.save()
@@ -115,8 +117,15 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             customers = flagUpdated(customers)
             // console.log(customers)
         }
-
+        
         if(customers.length === 1){
+            // const customer = customers[0]
+            // if(customer.customerUpdate){
+                // const pendingPayments = customer.pendingPayments
+                // const basicInfoUpdatedFields = Object.keys(customer.customerUpdate.newBody.basicInfo)
+                // const personalityInfoUpdatedFields = Object.keys(customer.customerUpdate.newBody.personalityInfo)
+                // customer.pendingPayments 
+            // }
             return reply.code(200).send({
                 data:customers[0],
                 message:"Customer found successfully",
@@ -160,7 +169,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         if(customerToUpdate.customerUpdate){
             return reply.code(400).send({
                 data:null,
-                message:"Customer already has a pending update",
+                message:"update pending",
                 event_code:0,
                 status_code:400
             })
@@ -173,44 +182,59 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             customerToUpdate.customerUpdate = newUpdate._id
             customerToUpdate.pendingPayments.update = true
         }
-        // const userUpdate = await User.findOneAndUpdate(
-            //     {firebaseUid:request.user.uid}, {$addToSet:{customerUpdates:newUpdate._id}}, {new:true}
-            // )
-            if(!userToUpdate.customerUpdates.includes(newUpdate._id)){
-                userToUpdate.customerUpdates.push(newUpdate._id)
-            }
-            await userToUpdate.save()
-            
-            newUpdate.customer = id
-            newUpdate.user = userToUpdate._id
-            
-            // const {_id, ...rest} = customerToUpdate
-            newUpdate.newBody = parseCustomerInfo(request.body)
 
-            let fieldsCount = 0
-            if(newUpdate.newBody.basicInfo){
-                
-                fieldsCount += Object.keys(newUpdate.newBody.basicInfo).length
-                
-                if(newUpdate.newBody.basicInfo.bio?.split(" ").length > 350 && !customerToUpdate.customerStatus.wordLimitExtended){
-                    customerToUpdate.pendingPayments.wordLimit = true
+        if(!userToUpdate.customerUpdates.includes(newUpdate._id)){
+            userToUpdate.customerUpdates.push(newUpdate._id)
+        }
+        await userToUpdate.save()
+        
+        newUpdate.customer = id
+        newUpdate.user = userToUpdate._id
+        newUpdate.newBody = parseCustomerInfo(request.body)
+
+        let fieldsCount = 0
+        if(newUpdate.newBody.basicInfo){
+            const updatedFields = Object.keys(newUpdate.newBody.basicInfo)
+            //map to object of bools
+            customerToUpdate.pendingPayments.basicInfo = updatedFields.reduce((acc, field)=>{
+                acc[field] = true
+                return acc
+            }, {})
+            // console.log("updated fields", customerToUpdate.pendingPayments.basicInfo)
+
+            fieldsCount += updatedFields.length
+            if(newUpdate.newBody.basicInfo.bio){
+                const bioWordCount = newUpdate.newBody.basicInfo.bio.split(" ").length
+                if(bioWordCount > customerToUpdate.customerStatus.bioWordLimit){
+                    customerToUpdate.pendingPayments.wordLimit = Math.ceil(bioWordCount/350)>1?Math.ceil(bioWordCount/350)-1:0
                 }
             }
-            if(newUpdate.newBody.personalityInfo){
-                fieldsCount += Object.keys(newUpdate.newBody.personalityInfo).length
+           
+        }
+        if(newUpdate.newBody.personalityInfo){
+            const updatedFields = Object.keys(newUpdate.newBody.personalityInfo)
+            customerToUpdate.pendingPayments.personalityInfo = updatedFields.reduce((acc, field)=>{
+                acc[field] = true
+                return acc
+            }, {})
+
+            fieldsCount += updatedFields.length
+        }
+        if(newUpdate.newBody.photos){
+            fieldsCount +=  newUpdate.newBody.photos.artworks?.length + (newUpdate.newBody.photos.imageUrl?1:0)
+            const newPhotosCount = newUpdate.newBody.photos.artworks?.length + (customerToUpdate.photos.imageUrl?1:0) +customerToUpdate.photos.artworks.length
+
+            console.log("new photos count", newPhotosCount)
+            if(newPhotosCount > customerToUpdate.customerStatus.photoLimit){
+                customerToUpdate.pendingPayments.photo = true
+                customerToUpdate.pendingPayments.extraPhotos = newPhotosCount - customerToUpdate.customerStatus.photoLimit
+                customerToUpdate.pendingPayments.updatedPhotos = newPhotosCount
             }
-            if(newUpdate.newBody.photos){
-                const newPhotosCount = newUpdate.newBody.photos.artworks?.length + (customerToUpdate.photos.imageUrl?1:0) +customerToUpdate.photos.artworks.length
-                console.log("new photos count", newPhotosCount)
-                if(newPhotosCount > customerToUpdate.customerStatus.photoLimit){
-                    customerToUpdate.pendingPayments.photo = true
-                    customerToUpdate.pendingPayments.photoNum = newPhotosCount - customerToUpdate.customerStatus.photoLimit
-                }
-            }
-            customerToUpdate.pendingPayments.updateNum  = fieldsCount
-            customerToUpdate = updatePendingPayments(customerToUpdate)
-            await newUpdate.save()
-            await customerToUpdate.save()
+        }
+        customerToUpdate.pendingPayments.updateNum  = fieldsCount
+        customerToUpdate = updatePendingPayments(customerToUpdate)
+        await newUpdate.save()
+        await customerToUpdate.save()
             
         reply.code(200).send({
             data:newUpdate,

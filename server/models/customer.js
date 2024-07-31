@@ -317,10 +317,14 @@ const customerSchema = new mongoose.Schema({
         renewal:{type:Boolean, required:true, default:false},
         update:{type:Boolean, required:true, default:false},
         updateNum:{type:Number, required:true, default:0},
-        wordLimit:{type:Boolean, required:true, default:false},
+        wordLimit:{type:Number, required:true, default:0},
         photo:{type:Boolean, required:true, default:false},
-        photoNum:{type:Number, required:true, default:0},
-        totalAmount:{type:Number, required:false, default:0}
+        updatedPhotos:{type:Number, required:true, default:0},
+        extraPhotos:{type:Number, required:true, default:0},
+        totalAmount:{type:Number, required:false, default:0},
+        basicInfo:{type:Object, required:false, default:{}},
+        personalityInfo:{type:Object, required:false, default:{}},
+        // photos:{type:Object, required:false, default:{}}
     },
     personalityInfo:{
         type:personalitySchema,
@@ -399,6 +403,7 @@ const customerSchema = new mongoose.Schema({
             default:false
         },
         wordLimitExtended:{type:Boolean, required:false, default:false},
+        bioWordLimit:{type:Number, required:false, default:350},
         photoLimit:{type:Number, required:false, default:3},
         premiumPlacement:{
             type:Boolean,
@@ -483,10 +488,14 @@ export const customerDefaultValues = {
         renewal: false,
         update: false,
         updateNum: 0,
-        wordLimit: false,
+        wordLimit: 0,
         photo: false,
-        photoNum: 0,
-        totalAmount: 0
+        updatedPhotos: 0,
+        extraPhotos: 0,
+        totalAmount: 0,
+        basicInfo: {},
+        personalityInfo: {},
+        photos: {}
     },
     customerStatus:{
         profileComplete: false,
@@ -496,6 +505,7 @@ export const customerDefaultValues = {
         recentlyUpdated: false,
         newlyListed: true,
         wordLimitExtended: false,
+        bioWordLimit:350,
         photoLimit: 3,
         premiumExpires: null,
         featuredExpires: null,
@@ -520,7 +530,7 @@ export const customerDefaultValues = {
 
 
 export const updatePendingPayments = function(cust) {
-    console.log('updating pending payments', products_cache);
+    // console.log('updating pending payments', products_cache);
 
     cust.pendingPayments.totalAmount = 0;
 
@@ -536,7 +546,7 @@ export const updatePendingPayments = function(cust) {
         console.log('updating pending payments for update');
         const product = products_cache.find(p => p.name === 'update');
         console.log('product', product);
-        if (product) cust.pendingPayments.totalAmount += product.price;
+        if (product) cust.pendingPayments.totalAmount += product.price * cust.pendingPayments.updateNum;
     }
     if(cust.pendingPayments.wordLimit){
         const product = products_cache.find(p => p.name === 'wordLimit');
