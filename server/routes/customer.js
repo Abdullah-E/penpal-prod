@@ -175,14 +175,14 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         // }
         let customerToUpdate = await Customer.findOne({_id:id}).exec();
         let newUpdate
-        if(customerToUpdate.pendingPayments.creation){
-            return reply.code(400).send({
-                data:null,
-                message:"creation pending",
-                event_code:0,
-                status_code:400
-            })
-        }
+        // if(customerToUpdate.pendingPayments.creation){
+        //     return reply.code(400).send({
+        //         data:null,
+        //         message:"creation pending",
+        //         event_code:0,
+        //         status_code:400
+        //     })
+        // }
         if(customerToUpdate.customerUpdate){
             return reply.code(400).send({
                 data:null,
