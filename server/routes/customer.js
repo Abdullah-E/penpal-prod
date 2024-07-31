@@ -57,15 +57,24 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         // const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
         let newCust = new Customer({...customerDefaultValues, ...fieldsFromRequest})
         newCust.photos.total = newCust.photos.artworks.length + 1
-        const bioWordCount = newCust.basicInfo.bio.split(" ").length
-        if(bioWordCount > newCust.customerStatus.bioWordLimit){
-            newCust.pendingPayments.wordLimit = Math.ceil(bioWordCount/350)>1?Math.ceil(bioWordCount/350)-1:0
+        // const bioWordCount = newCust.basicInfo.bio.split(" ").length
+        // if(bioWordCount > newCust.customerStatus.bioWordLimit){
+        //     newCust.pendingPayments.wordLimit = Math.ceil(bioWordCount/350)>1?Math.ceil(bioWordCount/350)-1:0
+        // }
+
+        if(request.body.wordLimit > 0){
+            newCust.pendingPayments.wordLimit = request.body.wordLimit
+        }
+
+        if(request.body.totalPaidPhotos >0){
+            newCust.pendingPayments.totalPaidPhotos = request.body.totalPaidPhotos
+            newCust.pendingPayments.photo = true
         }
         
-        if(newCust.photos.total > newCust.customerStatus.photoLimit){
-            newCust.pendingPayments.photo = true
-            newCust.pendingPayments.totalPaidPhotos = newCust.photos.total - newCust.customerStatus.photoLimit
-        }
+        // if(newCust.photos.total > newCust.customerStatus.photoLimit){
+        //     newCust.pendingPayments.photo = true
+        //     newCust.pendingPayments.totalPaidPhotos = newCust.photos.total - newCust.customerStatus.photoLimit
+        // }
         newCust = await updatePendingPayments(newCust)
         await newCust.save()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
@@ -204,10 +213,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
 
             fieldsCount += updatedFields.length
             if(newUpdate.newBody.basicInfo.bio){
-                const bioWordCount = newUpdate.newBody.basicInfo.bio.split(" ").length
-                if(bioWordCount > customerToUpdate.customerStatus.bioWordLimit){
-                    customerToUpdate.pendingPayments.wordLimit = Math.ceil(bioWordCount/350)>1?Math.ceil(bioWordCount/350)-1:0
-                }
+                customerToUpdate.pendingPayments.wordLimit = request.body.wordLimit
             }
            
         }
@@ -221,16 +227,18 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             fieldsCount += updatedFields.length
         }
         if(newUpdate.newBody.photos){
-            const photosInNewBody = newUpdate.newBody.photos.artworks?.length + (newUpdate.newBody.photos.imageUrl?1:0)
-            // fieldsCount +=  photosInNewBody
-            const newPhotosCount = newUpdate.newBody.photos.artworks?.length + (customerToUpdate.photos.imageUrl?1:0) +customerToUpdate.photos.artworks.length
+            // const photosInNewBody = newUpdate.newBody.photos.artworks?.length + (newUpdate.newBody.photos.imageUrl?1:0)
+            // // fieldsCount +=  photosInNewBody
+            // const newPhotosCount = newUpdate.newBody.photos.artworks?.length + (customerToUpdate.photos.imageUrl?1:0) +customerToUpdate.photos.artworks.length
 
-            console.log("new photos count", newPhotosCount)
-            if(newPhotosCount > customerToUpdate.customerStatus.photoLimit){
-                customerToUpdate.pendingPayments.photo = true
-                customerToUpdate.pendingPayments.totalPaidPhotos = newPhotosCount - customerToUpdate.customerStatus.photoLimit
-                customerToUpdate.pendingPayments.updatedPhotos = photosInNewBody
-            }
+            // // console.log("new photos count", newPhotosCount)
+            // if(newPhotosCount > customerToUpdate.customerStatus.photoLimit){
+            //     customerToUpdate.pendingPayments.photo = true
+            //     customerToUpdate.pendingPayments.totalPaidPhotos = newPhotosCount - customerToUpdate.customerStatus.photoLimit
+            //     customerToUpdate.pendingPayments.updatedPhotos = photosInNewBody
+            // }
+            customerToUpdate.pendingPayments.photo = true
+            customerToUpdate.pendingPayments.totalPaidPhotos = request.body.totalPaidPhotos
         }
         customerToUpdate.pendingPayments.updateNum  = fieldsCount
         customerToUpdate = updatePendingPayments(customerToUpdate)
