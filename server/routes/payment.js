@@ -23,11 +23,10 @@ fastify.addHook('onRequest', async (request, reply) => {
     }
 })
 
-
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
     try{
 
-        const {cid, update, total} = request.body
+        const {cid, wordLimit, totalPaidPhotos, updateNum} = request.body
         const boughtProducts = []
 
         for(const key of Object.keys(request.body)){
@@ -37,7 +36,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
                 }
             }
         }
-        if(update.status) boughtProducts.push('update')
+        if(wordLimit && wordLimit>0) boughtProducts.push('wordLimit')
 
         const products = await Product.find({name: boughtProducts}).exec()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
@@ -45,31 +44,52 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         let totalAmount = 0
         const productsList = []
         const line_items = products.map(product => {
-            if(product.name === 'update'){
-                productsList.push({
-                    product: product._id,
-                    quantity: update.num,
-                    price: product.price
-                })
-                totalAmount += product.price * update.num
-                return {
-                    price: product.priceId,
-                    quantity: parseInt(update.num)
-                }
+            // if(product.name === 'update'){
+            //     productsList.push({
+            //         product: product._id,
+            //         quantity: update.num,
+            //         price: product.price
+            //     })
+            //     totalAmount += product.price * update.num
+            //     return {
+            //         price: product.priceId,
+            //         quantity: parseInt(update.num)
+            //     }
+            // }
+            // else if(product.name === 'wordLimit'){
+            //     productsList.push({
+            //         product: product._id,
+            //         quantity: wordLimit,
+            //         price: product.price
+            //     })
+            //     totalAmount += product.price * wordLimit
+            //     return {
+            //         price: product.priceId,
+            //         quantity: parseInt(wordLimit)
+            //     }
+            // }
+            let quantity = 1
+            if(product.name === 'wordLimit'){
+                quantity = wordLimit
             }
-            totalAmount += product.price
+            else if(product.name === 'update'){
+                quantity = updateNum
+            }
+            else if (product.name === 'photo'){
+                quantity = totalPaidPhotos
+            }
+            totalAmount += product.price * quantity
             productsList.push({
                 product: product._id,
-                quantity: 1,
+                quantity: quantity,
                 price: product.price
             })
             return {
                 price: product.priceId,
-                quantity: 1
+                quantity: quantity
             }
-
         })
-
+        // console.log(line_items)
         if(line_items.length === 0){
             return reply.status(400).send({
                 message: 'No products found',
@@ -140,6 +160,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             return
         }
         purchase.paidAt = new Date()
+        purchase.status = test_status
         const customer = await Customer.findOne({_id: purchase.customer}).exec()
         for(const product of purchase.products){
             // purchase.status = session.status
@@ -161,6 +182,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
                 const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
                 update.paymentPending = false
                 customer.pendingPayments.update = false
+                customer.pendingPayments.updateNum = 0
                 if(update.updateApproved){
                     customer = await applyCustomerUpdate(customer, update)
                 }
