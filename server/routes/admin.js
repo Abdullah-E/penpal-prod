@@ -1,10 +1,10 @@
 import { fastify, BASE_URL } from "./init.js";
 
 // import User from "../models/user.js";
-import Customer from "../models/customer.js"
+import Customer, {updatePendingPayments} from "../models/customer.js"
 import CustomerUpdate from "../models/customerUpdate.js"
-import { getUserFromToken } from "../utils/firebase_utils.js"
 
+import { getUserFromToken } from "../utils/firebase_utils.js"
 import { applyCustomerUpdate } from "../utils/db_utils.js"
 
 fastify.addHook("onRequest", async (request, reply) => {
@@ -212,15 +212,23 @@ fastify.put(BASE_URL+"/admin/reject-update", async (request, reply) => {
         const customersToUpdate = await Customer.find(query).populate("customerUpdate").exec()
         const updatedCustomers = []
         for(let customer of customersToUpdate){
-            if(!customer.customerUpdate){
-                console.error("No update found for customer", customer._id)
-                continue
-            }
+            // if(!customer.customerUpdate){
+            //     console.error("No update found for customer", customer._id)
+            //     continue
+            // }
 
             // const update = await CustomerUpdate.findById(customer.customerUpdate._id)
             // update.updateApproved = false
             // delete customer._doc.customerUpdate
             customer.customerUpdate = undefined
+            customer.pendingPayments.update = false
+            customer.pendingPayments.updateNum = 0
+            customer.pendingPayments.photo = false
+            customer.pendingPayments.totalPaidPhotos = 0
+            customer.pendingPayments.wordLimit = 0
+            customer.pendingPayments.basicInfo = {}
+            customer.pendingPayments.personalityInfo = {}
+            customer = updatePendingPayments(customer)
             updatedCustomers.push(customer)
 
             await customer.save()
