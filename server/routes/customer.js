@@ -57,7 +57,7 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         // const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
         let newCust = new Customer({...customerDefaultValues, ...fieldsFromRequest})
         newCust.photos.total = newCust.photos.artworks.length + 1
-        if(newCust.basicInfo.bio.split(" ").length > 350 && !cust.customerStatus.wordLimitExtended){
+        if(newCust.basicInfo.bio.split(" ").length > 350 && !newCust.customerStatus.wordLimitExtended){
             newCust.pendingPayments.wordLimit = true
         }
         if(newCust.photos.total > newCust.customerStatus.imageLimit){
