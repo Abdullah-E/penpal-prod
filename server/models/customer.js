@@ -319,8 +319,8 @@ const customerSchema = new mongoose.Schema({
         updateNum:{type:Number, required:true, default:0},
         wordLimit:{type:Number, required:true, default:0},
         photo:{type:Boolean, required:true, default:false},
+        updatedPhotos:{type:Number, required:true, default:0},
         totalPaidPhotos:{type:Number, required:true, default:0},
-        extraPhotos:{type:Number, required:true, default:0},
         totalAmount:{type:Number, required:false, default:0},
         basicInfo:{type:Object, required:false, default:{}},
         personalityInfo:{type:Object, required:false, default:{}},
@@ -548,13 +548,13 @@ export const updatePendingPayments = function(cust) {
         console.log('product', product);
         if (product) cust.pendingPayments.totalAmount += product.price * cust.pendingPayments.updateNum;
     }
-    if(cust.pendingPayments.wordLimit){
+    if(cust.pendingPayments.wordLimit > 0){
         const product = products_cache.find(p => p.name === 'wordLimit');
-        if (product) cust.pendingPayments.totalAmount += product.price;
+        if (product) cust.pendingPayments.totalAmount += product.price * cust.pendingPayments.wordLimit;
     }
     if(cust.pendingPayments.photo){
         const product = products_cache.find(p => p.name === 'photo');
-        const photoPrice = cust.pendingPayments.photoNum * product.price;
+        const photoPrice = cust.pendingPayments.totalPaidPhotos * product.price;
         if (product) cust.pendingPayments.totalAmount += photoPrice;
     }
     //totalAMount to 2 decimal:

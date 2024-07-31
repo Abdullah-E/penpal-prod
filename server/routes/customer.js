@@ -64,7 +64,7 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         
         if(newCust.photos.total > newCust.customerStatus.photoLimit){
             newCust.pendingPayments.photo = true
-            newCust.pendingPayments.extraPhotos = newCust.photos.total - newCust.customerStatus.photoLimit
+            newCust.pendingPayments.totalPaidPhotos = newCust.photos.total - newCust.customerStatus.photoLimit
         }
         newCust = await updatePendingPayments(newCust)
         await newCust.save()
@@ -222,14 +222,14 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         }
         if(newUpdate.newBody.photos){
             const photosInNewBody = newUpdate.newBody.photos.artworks?.length + (newUpdate.newBody.photos.imageUrl?1:0)
-            fieldsCount +=  photosInNewBody
+            // fieldsCount +=  photosInNewBody
             const newPhotosCount = newUpdate.newBody.photos.artworks?.length + (customerToUpdate.photos.imageUrl?1:0) +customerToUpdate.photos.artworks.length
 
             console.log("new photos count", newPhotosCount)
             if(newPhotosCount > customerToUpdate.customerStatus.photoLimit){
                 customerToUpdate.pendingPayments.photo = true
-                customerToUpdate.pendingPayments.extraPhotos = newPhotosCount - customerToUpdate.customerStatus.photoLimit
-                customerToUpdate.pendingPayments.totalPaidPhotos = photosInNewBody
+                customerToUpdate.pendingPayments.totalPaidPhotos = newPhotosCount - customerToUpdate.customerStatus.photoLimit
+                customerToUpdate.pendingPayments.updatedPhotos = photosInNewBody
             }
         }
         customerToUpdate.pendingPayments.updateNum  = fieldsCount
