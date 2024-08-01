@@ -181,11 +181,14 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             if(prodName === 'creation'){
                 customer.pendingPayments.creation = false
                 customer.customerStatus.status = 'active'
-                customer.customerStatus.expiresAt = extendDateByMonth(customer.expiresAt, 12)
+                customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
             }
             else if(prodName === 'renewal'){
+                console.log('Renewal product')
                 customer.pendingPayments.renewal = false
-                customer.customerStatus.expiresAt = extendDateByMonth(customer.expiresAt, 12)
+                customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
+                console.log('Customer status', customer.customerStatus.expiresAt)
+                console.log('Customer status', customer.customerStatus)
                 customer.customerStatus.status = 'active'
             }
             else if(prodName === 'update'){
@@ -219,7 +222,11 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             }
             await purchase.save()
         }
+
         customer = await updatePendingPayments(customer)
+        customer.basicInfo.lastName = "Ocasi"
+        customer.markModified('customerStatus')
+        customer.markModified('pendingPayments')
         await customer.save()
         return reply.send({
             data:{
