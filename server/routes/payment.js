@@ -205,11 +205,11 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             }
             else if(prodName === 'premiumPlacement'){
                 customer.customerStatus.premiumPlacement = true 
-                customer.customerStatus.premiumExpires = extendDateByMonth(customer.placementFlags.premiumExpires, 1)
+                customer.customerStatus.premiumExpires = extendDateByMonth(customer.customerStatus.premiumExpires, 1)
             }
             else if(prodName === 'featuredPlacement'){
                 customer.customerStatus.featuredPlacement = true
-                customer.customerStatus.featuredExpires = extendDateByMonth(customer.placementFlags.featuredExpires, 1)
+                customer.customerStatus.featuredExpires = extendDateByMonth(customer.customerStatus.featuredExpires, 1)
             }
             else if(prodName === 'wordLimit'){
                 customer.pendingPayments.wordLimit = 0
