@@ -186,9 +186,11 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
                 update.paymentPending = false
                 customer.pendingPayments.update = false
                 customer.pendingPayments.updateNum = 0
-                if(update.updateApproved){
-                    customer = await applyCustomerUpdate(customer, update)
-                }
+                customer.pendingPayments.basicInfo = {}
+                customer.pendingPayments.personalityInfo = {}
+                // if(update.updateApproved){
+                //     customer = await applyCustomerUpdate(customer, update)
+                // }
                 await update.save()
             }
             else if(prodName === 'premiumPlacement'){
