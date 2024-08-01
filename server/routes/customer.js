@@ -210,6 +210,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         newUpdate.newBody = parseCustomerInfo(request.body)
 
         let fieldsCount = 0
+        customerToUpdate.pendingPayments.wordLimit += request.body.wordLimit
         if(newUpdate.newBody.basicInfo){
             const updatedFields = Object.keys(newUpdate.newBody.basicInfo)
             //map to object of bools
@@ -221,7 +222,6 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
 
             fieldsCount += updatedFields.length
             if(newUpdate.newBody.basicInfo.bio){
-                customerToUpdate.pendingPayments.wordLimit += request.body.wordLimit
             }
            
         }
@@ -234,6 +234,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
 
             fieldsCount += updatedFields.length
         }
+        customerToUpdate.pendingPayments.totalPaidPhotos += request.body.totalPaidPhotos
         if(newUpdate.newBody.photos){
             // const photosInNewBody = newUpdate.newBody.photos.artworks?.length + (newUpdate.newBody.photos.imageUrl?1:0)
             // // fieldsCount +=  photosInNewBody
@@ -247,7 +248,6 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             // }
             if(request.body.totalPaidPhotos > 0){
                 customerToUpdate.pendingPayments.photo = true
-                customerToUpdate.pendingPayments.totalPaidPhotos += request.body.totalPaidPhotos
 
             }
         }
