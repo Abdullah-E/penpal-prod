@@ -224,7 +224,6 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         }
 
         customer = await updatePendingPayments(customer)
-        customer.basicInfo.lastName = "Ocasi"
         customer.markModified('customerStatus')
         customer.markModified('pendingPayments')
         await customer.save()
