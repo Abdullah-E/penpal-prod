@@ -73,7 +73,9 @@ fastify.put(BASE_URL+"/admin/approve-customer", async (request, reply) => {
             "customerStatus.profileApproved":true, 
             createdAt:Date.now(), 
             "customerStatus.expiresAt":Date.now() + 1000*60*60*24*365, 
-            "customerStatus.newlyListed":true
+            "customerStatus.newlyListed":true,
+            "customerStatus.tag":"New Profile",
+            "customerStatus.status":"active"
         }, {new:true}).lean().exec()
         reply.send({
             data: customers,

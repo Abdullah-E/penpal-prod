@@ -401,6 +401,7 @@ fastify.get(BASE_URL + "/user/created-customers", async (request, reply) => {
     return;
   }
   try {
+    const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
     let customerList = await User.aggregate([
       {$match:{firebaseUid:request.user.uid}},
       {$project:{createdCustomers:1,_id:0}},
@@ -414,6 +415,8 @@ fastify.get(BASE_URL + "/user/created-customers", async (request, reply) => {
       {$replaceRoot:{newRoot:"$createdCustomers"}}
     ]).exec()
     customerList = await flagUpdated(customerList)
+    customerList = await flagFavorites(user, customerList)
+    customerList = await flagRatings(user, customerList)
     reply.send({
       data: customerList,
       event_code: 1,
