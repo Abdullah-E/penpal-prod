@@ -213,6 +213,15 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             await purchase.save()
         }
         await customer.save()
+        return reply.send({
+            data:{
+                status: session.status
+                // customerEmail: session.customer_details.email
+            },
+            message: 'Session retrieved successful checkout',
+            status_code: 200,
+            event_code:1
+        })
     }
     catch(err){
         console.error(err)
