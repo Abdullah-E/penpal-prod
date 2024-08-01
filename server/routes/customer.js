@@ -257,34 +257,6 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     }
 })
 
-fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{
-    try{
-        const {id} = request.query;
-        const {personality} = request.body;
-        const customerToUpdate = await Customer
-        .findOneAndUpdate(
-            {_id:id},
-            {personality:personality},
-            {new:true}
-        ).lean()
-        .exec();
-        reply.code(200).send({
-            data:customerToUpdate,
-            message:"Personality updated successfully",
-            event_code:1,
-            status_code:200
-        });
-    }catch(error){
-        console.error(error)
-        reply.code(400).send({
-            message:"Personality not updated",
-            event_code:0,
-            status_code:400,
-            data:null
-        });
-    }
-})
-
 fastify.put(BASE_URL + '/customer/rate', async(request, reply)=>{
     try{
         // await verifyToken(request,reply);
@@ -341,7 +313,7 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
     try{
         const n = request.query.n || 5;
         const customers = await Customer.aggregate([
-            {$match:{profileApproved:true, status:"active"}},
+            {$match:{"customerStatus.profileApproved":true, "customerStatus.status":"active"}},
             {$project:{_id:0, "bascicInfo.firstName":1, "basicInfo.lastName":1, rating:1, "photos.imageUrl":1, "basicInfo.age":1, "basicInfo.state":1, "basicInfo.tag":1}},
             {$sample:{size:parseInt(n)}},
         ]).exec();

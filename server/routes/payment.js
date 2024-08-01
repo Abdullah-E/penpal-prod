@@ -179,16 +179,17 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             // purchase.status = session.status
             if(prodName === 'creation'){
                 customer.pendingPayments.creation = false
-                customer.status = 'active'
+                customer.customerStatus.status = 'active'
+                // customer.customerStatus.profileApproved = true
                 //a year after current date
                 // const date = Date.now()
                 // customer.expiresAt = new Date(date.setFullYear(date.getFullYear() + 1))
-                customer.expiresAt = extendDateByMonth(customer.expiresAt, 12)
+                customer.customerStatus.expiresAt = extendDateByMonth(customer.expiresAt, 12)
             }
             else if(prodName === 'renewal'){
                 customer.pendingPayments.renewal = false
-                customer.expiresAt = extendDateByMonth(customer.expiresAt, 12)
-                customer.status = 'active'
+                customer.customerStatus.expiresAt = extendDateByMonth(customer.expiresAt, 12)
+                customer.customerStatus.status = 'active'
             }
             else if(prodName === 'update'){
                 // const custToUpdate = await Customer.findOne({_id: purchase.customer})
