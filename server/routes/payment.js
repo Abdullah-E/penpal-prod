@@ -145,7 +145,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         const session = await stripe.checkout.sessions.retrieve(session_id)
         console.log(session)
         
-        if(session.status !== 'completed'){
+        if(session.status !== 'complete'){
             console.log('Session not completed', session.status)
             return reply.send({
                 data:{
