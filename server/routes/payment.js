@@ -26,9 +26,9 @@ fastify.addHook('onRequest', async (request, reply) => {
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
     try{
 
-        const {cid, wordLimit, totalPaidPhotos, updateNum} = request.body
+        const {cid, wordLimit, totalPaidPhotos,  basicInfo, personalityInfo} = request.body
         const boughtProductsSet = new Set()
-
+        const customer = await Customer.findOne({_id: cid}).exec()
         for(const key of Object.keys(request.body)){
             if(typeof request.body[key]  === typeof true){
                 if(request.body[key]){
@@ -38,6 +38,11 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         }
         if(wordLimit && wordLimit>0) boughtProductsSet.add('wordLimit')
         if(totalPaidPhotos && totalPaidPhotos>0) boughtProductsSet.add('photo')
+        let updateNum = 0
+        if(basicInfo || personalityInfo){
+            boughtProductsSet.add('update')
+            updateNum = customer.pendingPayments.updateNum
+        } 
 
         const products = await Product.find({name: [...boughtProductsSet]}).exec()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
@@ -194,12 +199,12 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
                 await update.save()
             }
             else if(prodName === 'premiumPlacement'){
-                customer.placementFlags.premiumPlacement = true 
-                customer.placementFlags.premiumExpires = extendDateByMonth(customer.placementFlags.premiumExpires, 1)
+                customer.customerStatus.premiumPlacement = true 
+                customer.customerStatus.premiumExpires = extendDateByMonth(customer.placementFlags.premiumExpires, 1)
             }
             else if(prodName === 'featuredPlacement'){
-                customer.placementFlags.featuredPlacement = true
-                customer.placementFlags.featuredExpires = extendDateByMonth(customer.placementFlags.featuredExpires, 1)
+                customer.customerStatus.featuredPlacement = true
+                customer.customerStatus.featuredExpires = extendDateByMonth(customer.placementFlags.featuredExpires, 1)
             }
             else if(prodName === 'wordLimit'){
                 customer.pendingPayments.wordLimit = 0
