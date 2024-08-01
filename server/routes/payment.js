@@ -39,12 +39,13 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         if(totalPaidPhotos && totalPaidPhotos>0) boughtProductsSet.add('photo')
         let updateNum = 0
         if(basicInfo){
-            boughtProductsSet.add('update')
             updateNum += Object.keys(basicInfo).length 
         } 
         if(personalityInfo){
-            boughtProductsSet.add('update')
             updateNum += Object.keys(personalityInfo).length
+        }
+        if(basicInfo>0){
+            boughtProductsSet.add('update')
         }
         
         console.log('Update num', updateNum)
@@ -99,7 +100,8 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
                 quantity: quantity
             }
         })
-        // console.log(line_items)
+        
+        console.log(line_items)
         if(line_items.length === 0){
             return reply.status(400).send({
                 message: 'No products found',
