@@ -27,18 +27,19 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
     try{
 
         const {cid, wordLimit, totalPaidPhotos, updateNum} = request.body
-        const boughtProducts = []
+        const boughtProductsSet = new Set()
 
         for(const key of Object.keys(request.body)){
             if(typeof request.body[key]  === typeof true){
                 if(request.body[key]){
-                    boughtProducts.push(key)
+                    boughtProductsSet.add(key)
                 }
             }
         }
-        if(wordLimit && wordLimit>0) boughtProducts.push('wordLimit')
+        if(wordLimit && wordLimit>0) boughtProductsSet.add('wordLimit')
+        if(totalPaidPhotos && totalPaidPhotos>0) boughtProductsSet.add('photo')
 
-        const products = await Product.find({name: boughtProducts}).exec()
+        const products = await Product.find({name: [...boughtProductsSet]}).exec()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
 
         let totalAmount = 0
