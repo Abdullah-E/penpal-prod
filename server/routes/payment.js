@@ -44,7 +44,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         if(personalityInfo){
             updateNum += Object.keys(personalityInfo).length
         }
-        if(basicInfo>0){
+        if(updateNum>0){
             boughtProductsSet.add('update')
         }
         
