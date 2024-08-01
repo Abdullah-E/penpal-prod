@@ -5,7 +5,7 @@ const updateTags = async () => {
     const customers = await Customer.find()
     for(const customer of customers){
         if(customer.createdAt > new Date(new Date() - (7* 24 * 60 * 60 * 1000))){
-            customer.tag = "New Profile"
+            customer.customerStatus.tag = "New Profile"
         }else if(customer.lastUpdated > new Date(new Date() - (7* 24 * 60 * 60 * 1000))){
             customer.tag = "Recent Update"
         }else if(customer.tier === "premium"){

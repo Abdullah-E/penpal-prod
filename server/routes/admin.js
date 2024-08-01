@@ -35,10 +35,12 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
         const param = request.query
         const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const approvedBool = param["approved"] === "true"?true:false
+        const paymentBool = param["paymentPending"] === "true"?true:false
 
         const query = {
             ...(id && id.length > 0 ? {_id:{$in:id}} : {}),
             ...(param["approved"]?{"customerStatus.profileApproved":approvedBool}:{}),
+            "pendingPayments.creation":paymentBool
         }
         
         const customers = await Customer.find(query).exec();
@@ -96,10 +98,12 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
         const param = request.query
         const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const approvedBool = param["approved"] === "true"?true:false
+        const paymentBool = param["paymentPending"] === "true"?true:false
 
         const query = {
             ...(id && id.length > 0 ? {customer:{$in:id}} : {}),
             ...(param["approved"]?{updateApproved:approvedBool}:{}),
+            paymentPending:paymentBool
             // updateApproved:param["approved"]?approvedBool:undefined
         }
 
