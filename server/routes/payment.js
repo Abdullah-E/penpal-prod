@@ -172,7 +172,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         // if(test_status !== 'completed'){
         purchase.paidAt = new Date()
         purchase.status = session.status
-        const customer = await Customer.findOne({_id: purchase.customer}).exec()
+        let customer = await Customer.findOne({_id: purchase.customer}).exec()
         for(const product of purchase.products){
             const prodName = product.product.name
             // purchase.status = session.status
