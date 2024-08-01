@@ -146,7 +146,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         console.log(session)
         
         if(session.status !== 'completed'){
-            console.log('Session not completed')
+            console.log('Session not completed', session.status)
             return reply.send({
                 data:{
                     status: session.status
