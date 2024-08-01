@@ -245,8 +245,11 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             //     customerToUpdate.pendingPayments.totalPaidPhotos = newPhotosCount - customerToUpdate.customerStatus.photoLimit
             //     customerToUpdate.pendingPayments.updatedPhotos = photosInNewBody
             // }
-            customerToUpdate.pendingPayments.photo = true
-            customerToUpdate.pendingPayments.totalPaidPhotos += request.body.totalPaidPhotos
+            if(request.body.totalPaidPhotos > 0){
+                customerToUpdate.pendingPayments.photo = true
+                customerToUpdate.pendingPayments.totalPaidPhotos += request.body.totalPaidPhotos
+
+            }
         }
         customerToUpdate.pendingPayments.updateNum  = fieldsCount
         customerToUpdate = updatePendingPayments(customerToUpdate)
