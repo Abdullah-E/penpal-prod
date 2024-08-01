@@ -127,22 +127,6 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             // console.log(customers)
         }
         
-        if(customers.length === 1){
-            // const customer = customers[0]
-            // if(customer.customerUpdate){
-                // const pendingPayments = customer.pendingPayments
-                // const basicInfoUpdatedFields = Object.keys(customer.customerUpdate.newBody.basicInfo)
-                // const personalityInfoUpdatedFields = Object.keys(customer.customerUpdate.newBody.personalityInfo)
-                // customer.pendingPayments 
-            // }
-            return reply.code(200).send({
-                data:customers[0],
-                message:"Customer found successfully",
-                event_code:1,
-                status_code:200
-            })
-        }
-        // const customers = await Customer.find(query).exec();
         
         return reply.code(200).send({
             data:customers,

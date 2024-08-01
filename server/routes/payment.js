@@ -145,21 +145,22 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         const session = await stripe.checkout.sessions.retrieve(session_id)
         console.log(session)
         
-        reply.send({
-            data:{
-                status: session.status
-                // customerEmail: session.customer_details.email
-            },
-            message: 'Session retrieved',
-            status_code: 200,
-            event_code:1
-        })
+        if(session.status !== 'completed'){
+            console.log('Session not completed')
+            return reply.send({
+                data:{
+                    status: session.status
+                    // customerEmail: session.customer_details.email
+                },
+                message: 'Session retrieved unsucesful checkout',
+                status_code: 200,
+                event_code:1
+            })
 
-        const purchase = await Purchase.findOne({sessionId: session_id}).populate('products.product').exec()
-        if(test_status !== 'completed'){
-        // if(session.status !== 'completed'){
-            return
         }
+        console.log('Session completed')
+        const purchase = await Purchase.findOne({sessionId: session_id}).populate('products.product').exec()
+        // if(test_status !== 'completed'){
         purchase.paidAt = new Date()
         purchase.status = test_status
         const customer = await Customer.findOne({_id: purchase.customer}).exec()
