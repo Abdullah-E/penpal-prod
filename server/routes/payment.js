@@ -11,6 +11,7 @@ import {applyCustomerUpdate} from '../utils/db_utils.js'
 import { extendDateByMonth } from '../utils/misc_utils.js'
 
 import Stripe from 'stripe'
+import { Seq2SeqLMOutput } from '@xenova/transformers'
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
 
 fastify.addHook('onRequest', async (request, reply) => {
@@ -162,7 +163,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         const purchase = await Purchase.findOne({sessionId: session_id}).populate('products.product').exec()
         // if(test_status !== 'completed'){
         purchase.paidAt = new Date()
-        purchase.status = test_status
+        purchase.status = session.status
         const customer = await Customer.findOne({_id: purchase.customer}).exec()
         for(const product of purchase.products){
             // purchase.status = session.status
