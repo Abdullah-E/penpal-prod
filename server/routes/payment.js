@@ -143,8 +143,8 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
     try{
         const {session_id, test_status} = request.query
         const session = await stripe.checkout.sessions.retrieve(session_id)
-        console.log(session)
-        
+        // console.log(session)
+        // session.status = test_status? test_status: session.status
         if(session.status !== 'complete'){
             console.log('Session not completed', session.status)
             return reply.send({
@@ -152,7 +152,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
                     status: session.status
                     // customerEmail: session.customer_details.email
                 },
-                message: 'Session retrieved unsucesful checkout',
+                message: 'Session retrieved unsuccessful checkout',
                 status_code: 200,
                 event_code:1
             })
@@ -165,21 +165,22 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         purchase.status = session.status
         const customer = await Customer.findOne({_id: purchase.customer}).exec()
         for(const product of purchase.products){
+            const prodName = product.product.name
             // purchase.status = session.status
-            if(product.name === 'creation'){
+            if(prodName === 'creation'){
                 customer.pendingPayments.creation = false
                 customer.status = 'active'
                 //a year after current date
                 // const date = Date.now()
                 // customer.expiresAt = new Date(date.setFullYear(date.getFullYear() + 1))
-
+                customer.expiresAt = extendDateByMonth(customer.expiresAt, 12)
             }
-            else if(product.name === 'renewal'){
+            else if(prodName === 'renewal'){
                 customer.pendingPayments.renewal = false
                 customer.expiresAt = extendDateByMonth(customer.expiresAt, 12)
                 customer.status = 'active'
             }
-            else if(product.name === 'update'){
+            else if(prodName === 'update'){
                 // const custToUpdate = await Customer.findOne({_id: purchase.customer})
                 const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
                 update.paymentPending = false
@@ -190,21 +191,21 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
                 }
                 await update.save()
             }
-            else if(product.name === 'premiumPlacement'){
+            else if(prodName === 'premiumPlacement'){
                 customer.placementFlags.premiumPlacement = true 
                 customer.placementFlags.premiumExpires = extendDateByMonth(customer.placementFlags.premiumExpires, 1)
             }
-            else if(product.name === 'featuredPlacement'){
+            else if(prodName === 'featuredPlacement'){
                 customer.placementFlags.featuredPlacement = true
                 customer.placementFlags.featuredExpires = extendDateByMonth(customer.placementFlags.featuredExpires, 1)
             }
-            else if(product.name === 'wordLimit'){
+            else if(prodName === 'wordLimit'){
                 customer.pendingPayments.wordLimit = 0
 
                 customer.customerStatus.wordLimitExtended = true
                 customer.customerStatus.bioWordLimit += product.quantity * 100
             }
-            else if(product.name === 'photo'){
+            else if(prodName === 'photo'){
                 customer.pendingPayments.photo = false
                 customer.pendingPayments.totalPaidPhotos = 0
 
