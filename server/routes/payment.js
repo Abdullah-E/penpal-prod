@@ -198,6 +198,18 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
                 customer.placementFlags.featuredPlacement = true
                 customer.placementFlags.featuredExpires = extendDateByMonth(customer.placementFlags.featuredExpires, 1)
             }
+            else if(product.name === 'wordLimit'){
+                customer.pendingPayments.wordLimit = 0
+
+                customer.customerStatus.wordLimitExtended = true
+                customer.customerStatus.bioWordLimit += product.quantity * 100
+            }
+            else if(product.name === 'photo'){
+                customer.pendingPayments.photo = false
+                customer.pendingPayments.totalPaidPhotos = 0
+
+                customer.customerStatus.photoLimit += product.quantity
+            }
             await purchase.save()
         }
         await customer.save()
