@@ -11,7 +11,6 @@ import {applyCustomerUpdate} from '../utils/db_utils.js'
 import { extendDateByMonth } from '../utils/misc_utils.js'
 
 import Stripe from 'stripe'
-import { Seq2SeqLMOutput } from '@xenova/transformers'
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
 
 fastify.addHook('onRequest', async (request, reply) => {
