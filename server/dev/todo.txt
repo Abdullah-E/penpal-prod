@@ -1,5 +1,20 @@
-add email confirmation
+admin only show paid customers in unapproved list
 
+check session status properly propagating paid services
 
-//perosnality only changed fields
+polling script for paid services
+    check profile expiration:
+        customerStatus.
+            status
+            expiresAt
+    check premium/featured expiration
+        customerStatus.
+            premiumExpires
+            featuredExpires
 
+            premiumPlacement
+            featuredPlacement
+    check recentlyUpdated
+        customerStatus.
+            lastUpdated
+            recentlyUpdated 

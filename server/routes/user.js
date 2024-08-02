@@ -3,6 +3,7 @@ import { auth, admin } from "../config/firebase.js";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendEmailVerification
 } from "firebase/auth";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
@@ -67,6 +68,7 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       message: "User created successfully",
       status_code: 201,
     });
+    await sendEmailVerification(fb_user.user);
   } catch (error) {
     console.error(error);
 
@@ -340,7 +342,11 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     const {p:page, l:limit} = request.query;
     const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
     if (user.profileComplete == false) {
-      let matches = await Customer.find().sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
+      let matches = await Customer.find({
+        "customerStatus.profileApproved":true,
+        "pendingPayments.creation":false,
+        "customerStatus.status":"active"
+      }).sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
       matches = await flagFavorites(user, matches)
       matches = await flagRatings(user, matches)
       matches = await flagCreated(user, matches)
@@ -399,6 +405,7 @@ fastify.get(BASE_URL + "/user/created-customers", async (request, reply) => {
     return;
   }
   try {
+    const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
     let customerList = await User.aggregate([
       {$match:{firebaseUid:request.user.uid}},
       {$project:{createdCustomers:1,_id:0}},
@@ -412,6 +419,8 @@ fastify.get(BASE_URL + "/user/created-customers", async (request, reply) => {
       {$replaceRoot:{newRoot:"$createdCustomers"}}
     ]).exec()
     customerList = await flagUpdated(customerList)
+    customerList = await flagFavorites(user, customerList)
+    customerList = await flagRatings(user, customerList)
     reply.send({
       data: customerList,
       event_code: 1,
@@ -701,6 +710,7 @@ fastify.post(BASE_URL + "/user/login", async (request, reply) => {
       return;
     }
     const fb_user = await signInWithEmailAndPassword(auth, email, password);
+    console.log(fb_user.user.emailVerified);
     const token = await fb_user.user.getIdToken();
     reply.send({
       data: { token },

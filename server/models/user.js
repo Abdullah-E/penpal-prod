@@ -126,7 +126,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function(next) {
     this.profileComplete = userComplete(this);
     if (this.isModified('personalityInfo')) {
-        const customers = await Customer.find().limit(50);
+        const customers = await Customer.find({"customerStatus.profileApproved": true}).limit(50);
         const compatibilityScores = customers.map(customer => {
             // customer.lastMatched = new Date();
             // await customer.save();

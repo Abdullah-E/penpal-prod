@@ -15,7 +15,11 @@ const EYE_TYPES = [
 const GENDER_TYPES = [
     "Other",
     "Male",
-    "Female"
+    "Female",
+    "Transgender Male to Female",
+    "Transgender Females to Male",
+    "Gender Non Conforming/Non binary",
+
 ]
 
 const ORIENTATION_TYPES = [
@@ -172,6 +176,11 @@ const customerSchema = new mongoose.Schema({
             required: true,
             default:""
         },
+        bio:{
+            type: String,
+            required: false,
+            default:""
+        },
         gender:{
             type:String,
             required:false,
@@ -307,7 +316,14 @@ const customerSchema = new mongoose.Schema({
         creation:{type:Boolean, required:true, default:true},
         renewal:{type:Boolean, required:true, default:false},
         update:{type:Boolean, required:true, default:false},
-        totalAmount:{type:Number, required:false, default:0}
+        updateNum:{type:Number, required:true, default:0},
+        wordLimit:{type:Number, required:true, default:0},
+        photo:{type:Boolean, required:true, default:false},
+        totalPaidPhotos:{type:Number, required:true, default:0},
+        totalAmount:{type:Number, required:false, default:0},
+        basicInfo:{type:Object, required:false, default:{}},
+        personalityInfo:{type:Object, required:false, default:{}},
+        // photos:{type:Object, required:false, default:{}}
     },
     personalityInfo:{
         type:personalitySchema,
@@ -365,68 +381,22 @@ const customerSchema = new mongoose.Schema({
     },
     
     customerStatus:{
-        status:{
-            type:String,
-            required:false,
-            enum:STATUS_TYPES,
-            default:STATUS_TYPES[0]
-        },
-        tag:{
-            type:String,
-            required:false,
-        },
-        profileApproved:{
-            type:Boolean,
-            required:true,
-            default:false
-        },
-        profileComplete:{
-            type:Boolean,
-            required:true,
-            default:false
-        },
+        status:{type:String,required:false,enum:STATUS_TYPES,default:STATUS_TYPES[0]},
+        tag:{type:String,required:false,},
+        profileApproved:{type:Boolean,required:true,default:false},
+        profileComplete:{type:Boolean,required:true,default:false},
         wordLimitExtended:{type:Boolean, required:false, default:false},
-        imageLimitExtended:{type:Boolean, required:false, default:false},
-        premiumPlacement:{
-            type:Boolean,
-            required:false,
-            default:false
-        },
-        featuredPlacement:{
-            type:Boolean,
-            required:false,
-            default:false
-        },
-        recentlyUpdated:{
-            type:Boolean,
-            required:false,
-            default:false
-        },
-        newlyListed:{
-            type:Boolean,
-            required:false,
-            default:false
-        },
-        lastUpdated:{
-            type: Date,
-            required: false
-        },
-        premiumExpires:{
-            type: Date,
-            required: false
-        },
-        featuredExpires:{
-            type: Date,
-            required: false
-        },
-        lastMatched:{
-            type: Date,
-            required: false
-        },
-        expiresAt:{
-            type: Date,
-            required: false
-        },
+        bioWordLimit:{type:Number, required:false, default:350},
+        photoLimit:{type:Number, required:false, default:3},
+        premiumPlacement:{type:Boolean,required:false,default:false},
+        featuredPlacement:{type:Boolean,required:false,default:false},
+        recentlyUpdated:{type:Boolean,required:false,default:false},
+        newlyListed:{type:Boolean,required:false,default:false},
+        lastUpdated:{type: Date,required: false},
+        premiumExpires:{type: Date,required: false},
+        featuredExpires:{type: Date,required: false},
+        lastMatched:{type: Date,required: false},
+        expiresAt:{type: Date,required: false},
     },
 })
 
@@ -440,6 +410,7 @@ export const customerDefaultValues = {
         city: "",
         state: "",
         zipcode: "",
+        bio: "",
         gender: "",
         orientation: "",
         race: "",
@@ -468,7 +439,14 @@ export const customerDefaultValues = {
         creation: true,
         renewal: false,
         update: false,
-        totalAmount: 0
+        updateNum: 0,
+        wordLimit: 0,
+        photo: false,
+        totalPaidPhotos: 0,
+        totalAmount: 0,
+        basicInfo: {},
+        personalityInfo: {},
+        photos: {}
     },
     customerStatus:{
         profileComplete: false,
@@ -478,7 +456,8 @@ export const customerDefaultValues = {
         recentlyUpdated: false,
         newlyListed: true,
         wordLimitExtended: false,
-        imageLimitExtended: false,
+        bioWordLimit:350,
+        photoLimit: 3,
         premiumExpires: null,
         featuredExpires: null,
         status: "new",
@@ -502,7 +481,7 @@ export const customerDefaultValues = {
 
 
 export const updatePendingPayments = function(cust) {
-    console.log('updating pending payments', products_cache);
+    // console.log('updating pending payments', products_cache);
 
     cust.pendingPayments.totalAmount = 0;
 
@@ -518,8 +497,19 @@ export const updatePendingPayments = function(cust) {
         console.log('updating pending payments for update');
         const product = products_cache.find(p => p.name === 'update');
         console.log('product', product);
-        if (product) cust.pendingPayments.totalAmount += product.price;
+        if (product) cust.pendingPayments.totalAmount += product.price * cust.pendingPayments.updateNum;
     }
+    if(cust.pendingPayments.wordLimit > 0){
+        const product = products_cache.find(p => p.name === 'wordLimit');
+        if (product) cust.pendingPayments.totalAmount += product.price * cust.pendingPayments.wordLimit;
+    }
+    if(cust.pendingPayments.photo){
+        const product = products_cache.find(p => p.name === 'photo');
+        const photoPrice = cust.pendingPayments.totalPaidPhotos * product.price;
+        if (product) cust.pendingPayments.totalAmount += photoPrice;
+    }
+    //totalAMount to 2 decimal:
+    cust.pendingPayments.totalAmount = cust.pendingPayments.totalAmount.toFixed(2);
     return cust;
 };
 

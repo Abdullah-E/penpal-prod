@@ -25,8 +25,12 @@ fastify.addHook('onRequest', async(request, reply)=>{
 })
 
 const parseCustomerInfo = (body) => {
-    const fields = Object.keys(body["basicInfo"])
-    const customer = {}
+    
+    const fields = body["basicInfo"]?Object.keys(body["basicInfo"]):[]
+    const customer = {
+        basicInfo:{}
+        // personalityInfo:{},
+    }
     fields.forEach(field => {
         if(field === "spokenLanguages"){
             // console.log("skipping", field)
@@ -52,6 +56,25 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         // console.log(fieldsFromRequest)
         // const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
         let newCust = new Customer({...customerDefaultValues, ...fieldsFromRequest})
+        // newCust.photos.total = newCust.photos.artworks.length + 1
+        // const bioWordCount = newCust.basicInfo.bio.split(" ").length
+        // if(bioWordCount > newCust.customerStatus.bioWordLimit){
+        //     newCust.pendingPayments.wordLimit = Math.ceil(bioWordCount/350)>1?Math.ceil(bioWordCount/350)-1:0
+        // }
+
+        // if(request.body.wordLimit > 0){
+        newCust.pendingPayments.wordLimit = request.body.wordLimit
+        // }
+
+        if(request.body.totalPaidPhotos >0){
+            newCust.pendingPayments.totalPaidPhotos = request.body.totalPaidPhotos
+            newCust.pendingPayments.photo = true
+        }
+        
+        // if(newCust.photos.total > newCust.customerStatus.photoLimit){
+        //     newCust.pendingPayments.photo = true
+        //     newCust.pendingPayments.totalPaidPhotos = newCust.photos.total - newCust.customerStatus.photoLimit
+        // }
         newCust = await updatePendingPayments(newCust)
         await newCust.save()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
@@ -83,17 +106,33 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
     try{
         //id could be string or array of strings
         const param = request.query
-        const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const ids = param["id"] && Array.isArray(param["id"])?param["id"]: [param["id"]]
         const sort_on = param["sort_on"] || "createdAt"
         //specify other params here
         const page = param["p"] || 0
         const limit = param["l"] || 50
-        const query = {
-            ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
-            
-            //add them in here
+        console.log(ids)
+        let query = {
+            ...(param["id"] && ids && ids.length > 0 ? {_id:{$in:ids}} : {})
         }
+        // if(ids && ids.length === 1){
+        //     query = {
+        //         ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+        //         //add them in here
+        //     }
+        // }else{
+        //     query = {
+        //         ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
+        //         // "customerStatus.profileApproved":true,
+        //         // "pendingPayments.creation":false,
+        //         // "customerStatus.status":"active"
+        //     }
+        // }
+
+        // const approvedBool = param["approved"] === "true"?true:false
+        // const paymentBool = param["paymentPending"] === "true"?true:false
         let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
+        // let customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
         // const fb_user = await getUserFromToken(request);
         if(request.user && request.user.role === "user"){
             const user = await User.findOne({firebaseUid:request.user.uid}).exec()
@@ -103,16 +142,7 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             customers = flagUpdated(customers)
             // console.log(customers)
         }
-
-        if(customers.length === 1){
-            return reply.code(200).send({
-                data:customers[0],
-                message:"Customer found successfully",
-                event_code:1,
-                status_code:200
-            })
-        }
-        // const customers = await Customer.find(query).exec();
+        
         
         return reply.code(200).send({
             data:customers,
@@ -135,18 +165,31 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const {id} = request.query
         const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
-        if(!userToUpdate.createdCustomers.includes(id)){
-            return reply.code(403).send({
-                data:null,
-                message:"Unauthorized - Not creator of customer",
-                event_code:0,
-                status_code:403
-            })
-        }
+        // if(!userToUpdate.createdCustomers.includes(id)){
+        //     return reply.code(403).send({
+        //         data:null,
+        //         message:"Unauthorized - Not creator of customer",
+        //         event_code:0,
+        //         status_code:403
+        //     })
+        // }
         let customerToUpdate = await Customer.findOne({_id:id}).exec();
         let newUpdate
+        // if(customerToUpdate.pendingPayments.creation){
+        //     return reply.code(400).send({
+        //         data:null,
+        //         message:"creation pending",
+        //         event_code:0,
+        //         status_code:400
+        //     })
+        // }
         if(customerToUpdate.customerUpdate){
-            newUpdate=await CustomerUpdate.findOne({_id:customerToUpdate.customerUpdate}).exec()
+            return reply.code(400).send({
+                data:null,
+                message:"update pending",
+                event_code:0,
+                status_code:400
+            })
             // console.log(newUpdate)
         }else{
             newUpdate = new CustomerUpdate({
@@ -155,24 +198,64 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             })
             customerToUpdate.customerUpdate = newUpdate._id
             customerToUpdate.pendingPayments.update = true
-            customerToUpdate = updatePendingPayments(customerToUpdate)
-            await customerToUpdate.save()
         }
-        // const userUpdate = await User.findOneAndUpdate(
-        //     {firebaseUid:request.user.uid}, {$addToSet:{customerUpdates:newUpdate._id}}, {new:true}
-        // )
+
         if(!userToUpdate.customerUpdates.includes(newUpdate._id)){
             userToUpdate.customerUpdates.push(newUpdate._id)
         }
         await userToUpdate.save()
-
+        
         newUpdate.customer = id
         newUpdate.user = userToUpdate._id
-
-        // const {_id, ...rest} = customerToUpdate
         newUpdate.newBody = parseCustomerInfo(request.body)
-        await newUpdate.save()
 
+        let fieldsCount = 0
+        customerToUpdate.pendingPayments.wordLimit += request.body.wordLimit
+        if(newUpdate.newBody.basicInfo){
+            const updatedFields = Object.keys(newUpdate.newBody.basicInfo)
+            //map to object of bools
+            customerToUpdate.pendingPayments.basicInfo = updatedFields.reduce((acc, field)=>{
+                acc[field] = true
+                return acc
+            }, {})
+            // console.log("updated fields", customerToUpdate.pendingPayments.basicInfo)
+
+            fieldsCount += updatedFields.length
+            if(newUpdate.newBody.basicInfo.bio){
+            }
+           
+        }
+        if(newUpdate.newBody.personalityInfo){
+            const updatedFields = Object.keys(newUpdate.newBody.personalityInfo)
+            customerToUpdate.pendingPayments.personalityInfo = updatedFields.reduce((acc, field)=>{
+                acc[field] = true
+                return acc
+            }, {})
+
+            fieldsCount += updatedFields.length
+        }
+        customerToUpdate.pendingPayments.totalPaidPhotos += request.body.totalPaidPhotos
+        if(newUpdate.newBody.photos){
+            // const photosInNewBody = newUpdate.newBody.photos.artworks?.length + (newUpdate.newBody.photos.imageUrl?1:0)
+            // // fieldsCount +=  photosInNewBody
+            // const newPhotosCount = newUpdate.newBody.photos.artworks?.length + (customerToUpdate.photos.imageUrl?1:0) +customerToUpdate.photos.artworks.length
+
+            // // console.log("new photos count", newPhotosCount)
+            // if(newPhotosCount > customerToUpdate.customerStatus.photoLimit){
+            //     customerToUpdate.pendingPayments.photo = true
+            //     customerToUpdate.pendingPayments.totalPaidPhotos = newPhotosCount - customerToUpdate.customerStatus.photoLimit
+            //     customerToUpdate.pendingPayments.updatedPhotos = photosInNewBody
+            // }
+            if(request.body.totalPaidPhotos > 0){
+                customerToUpdate.pendingPayments.photo = true
+
+            }
+        }
+        customerToUpdate.pendingPayments.updateNum  = fieldsCount
+        customerToUpdate = updatePendingPayments(customerToUpdate)
+        await newUpdate.save()
+        await customerToUpdate.save()
+            
         reply.code(200).send({
             data:newUpdate,
             message:"Customer update requested successfully",
@@ -182,35 +265,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     }catch(error){
         console.error(error)
         reply.code(400).send({
-            message:"Customer not updated",
-            event_code:0,
-            status_code:400,
-            data:null
-        });
-    }
-})
-
-fastify.put(BASE_URL + '/customer/personality/test', async(request, reply)=>{
-    try{
-        const {id} = request.query;
-        const {personality} = request.body;
-        const customerToUpdate = await Customer
-        .findOneAndUpdate(
-            {_id:id},
-            {personality:personality},
-            {new:true}
-        ).lean()
-        .exec();
-        reply.code(200).send({
-            data:customerToUpdate,
-            message:"Personality updated successfully",
-            event_code:1,
-            status_code:200
-        });
-    }catch(error){
-        console.error(error)
-        reply.code(400).send({
-            message:"Personality not updated",
+            message:`Customer not updated ${error.message}`,
             event_code:0,
             status_code:400,
             data:null
@@ -274,7 +329,7 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
     try{
         const n = request.query.n || 5;
         const customers = await Customer.aggregate([
-            {$match:{profileApproved:true, status:"active"}},
+            {$match:{"customerStatus.profileApproved":true, "customerStatus.status":"active"}},
             {$project:{_id:0, "bascicInfo.firstName":1, "basicInfo.lastName":1, rating:1, "photos.imageUrl":1, "basicInfo.age":1, "basicInfo.state":1, "basicInfo.tag":1}},
             {$sample:{size:parseInt(n)}},
         ]).exec();

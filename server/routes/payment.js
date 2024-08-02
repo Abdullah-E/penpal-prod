@@ -3,11 +3,12 @@ import {BASE_URL, fastify} from './init.js'
 import User from '../models/user.js'
 import Purchase from '../models/purchase.js'
 import Product from '../models/product.js'
-import Customer from '../models/customer.js'
+import Customer, {updatePendingPayments} from '../models/customer.js'
 import CustomerUpdate from '../models/customerUpdate.js'
 
 import { verifyToken } from '../utils/firebase_utils.js'
 import {applyCustomerUpdate} from '../utils/db_utils.js'
+import { extendDateByMonth } from '../utils/misc_utils.js'
 import { extendDateByMonth } from '../utils/misc_utils.js'
 
 import Stripe from 'stripe'
@@ -23,53 +24,90 @@ fastify.addHook('onRequest', async (request, reply) => {
     }
 })
 
-
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
     try{
 
-        const {cid, update, total} = request.body
-        const boughtProducts = []
+        const {cid, wordLimit, totalPaidPhotos,  basicInfo, personalityInfo} = request.body
+        const base_url = request.body.url || 'https://app.awayoutpenpals.com'
 
+        const boughtProductsSet = new Set()
         for(const key of Object.keys(request.body)){
             if(typeof request.body[key]  === typeof true){
                 if(request.body[key]){
-                    boughtProducts.push(key)
+                    boughtProductsSet.add(key)
                 }
             }
         }
-        if(update.status) boughtProducts.push('update')
+        if(wordLimit && wordLimit>0) boughtProductsSet.add('wordLimit')
+        if(totalPaidPhotos && totalPaidPhotos>0) boughtProductsSet.add('photo')
+        let updateNum = 0
+        if(!boughtProductsSet.has('creation')){
+            if(basicInfo){
+                updateNum += Object.keys(basicInfo).length 
+            } 
+            if(personalityInfo){
+                updateNum += Object.keys(personalityInfo).length
+            }
+            if(updateNum>0){
+                boughtProductsSet.add('update')
+            }
 
-        const products = await Product.find({name: boughtProducts}).exec()
+        }
+        
+        console.log('Update num', updateNum)
+        const products = await Product.find({name: [...boughtProductsSet]}).exec()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
 
         let totalAmount = 0
         const productsList = []
         const line_items = products.map(product => {
-            if(product.name === 'update'){
-                productsList.push({
-                    product: product._id,
-                    quantity: update.num,
-                    price: product.price
-                })
-                totalAmount += product.price * update.num
-                return {
-                    price: product.priceId,
-                    quantity: parseInt(update.num)
-                }
+            // if(product.name === 'update'){
+            //     productsList.push({
+            //         product: product._id,
+            //         quantity: update.num,
+            //         price: product.price
+            //     })
+            //     totalAmount += product.price * update.num
+            //     return {
+            //         price: product.priceId,
+            //         quantity: parseInt(update.num)
+            //     }
+            // }
+            // else if(product.name === 'wordLimit'){
+            //     productsList.push({
+            //         product: product._id,
+            //         quantity: wordLimit,
+            //         price: product.price
+            //     })
+            //     totalAmount += product.price * wordLimit
+            //     return {
+            //         price: product.priceId,
+            //         quantity: parseInt(wordLimit)
+            //     }
+            // }
+            let quantity = 1
+            if(product.name === 'wordLimit'){
+                quantity = wordLimit
             }
-            totalAmount += product.price
+            else if(product.name === 'update'){
+                quantity = updateNum
+            }
+            else if (product.name === 'photo'){
+                quantity = totalPaidPhotos
+            }
+            totalAmount += product.price * quantity
             productsList.push({
                 product: product._id,
-                quantity: 1,
+                quantity: quantity,
                 price: product.price
             })
             return {
                 price: product.priceId,
-                quantity: 1
+                quantity: quantity
             }
-
         })
-
+        
+        console.log(line_items)
         if(line_items.length === 0){
             return reply.status(400).send({
                 message: 'No products found',
@@ -84,7 +122,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             mode: 'payment',
             payment_method_types: ['card'],
             line_items: line_items,
-            return_url: `http://localhost:5000/payment/result?session_id={CHECKOUT_SESSION_ID}`,
+            return_url: `${base_url}/payment/result?session_id={CHECKOUT_SESSION_ID}`,
         })
         
         const newPurchase = new Purchase({
@@ -122,49 +160,74 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
     try{
         const {session_id, test_status} = request.query
         const session = await stripe.checkout.sessions.retrieve(session_id)
-        console.log(session)
-        
-        reply.send({
-            data:{
-                status: session.status
-                // customerEmail: session.customer_details.email
-            },
-            message: 'Session retrieved',
-            status_code: 200,
-            event_code:1
-        })
+        // console.log(session)
+        session.status = test_status? test_status: session.status
+        if(session.status !== 'complete'){
+            console.log('Session not completed', session.status)
+            return reply.send({
+                data:{
+                    status: session.status
+                    // customerEmail: session.customer_details.email
+                },
+                message: 'Session retrieved unsuccessful checkout',
+                status_code: 200,
+                event_code:1
+            })
 
-        const purchase = await Purchase.findOne({sessionId: session_id}).populate('products.product').exec()
-        if(test_status !== 'completed'){
-        // if(session.status !== 'completed'){
-            return
         }
+        console.log('Session completed')
+        const purchase = await Purchase.findOne({sessionId: session_id}).populate('products.product').exec()
+        // if(test_status !== 'completed'){
         purchase.paidAt = new Date()
-        const customer = await Customer.findOne({_id: purchase.customer}).exec()
+        purchase.status = session.status
+        let customer = await Customer.findOne({_id: purchase.customer}).exec()
         for(const product of purchase.products){
+            const prodName = product.product.name
             // purchase.status = session.status
-            if(product.name === 'creation'){
+            if(prodName === 'creation'){
                 customer.pendingPayments.creation = false
-                customer.status = 'active'
-                //a year after current date
-                // const date = Date.now()
-                // customer.expiresAt = new Date(date.setFullYear(date.getFullYear() + 1))
-
+                customer.customerStatus.status = 'active'
+                customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
             }
-            else if(product.name === 'renewal'){
+            else if(prodName === 'renewal'){
+                console.log('Renewal product')
                 customer.pendingPayments.renewal = false
-                customer.expiresAt = extendDateByMonth(customer.expiresAt, 12)
-                customer.status = 'active'
+                customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
+                console.log('Customer status', customer.customerStatus.expiresAt)
+                console.log('Customer status', customer.customerStatus)
+                customer.customerStatus.status = 'active'
             }
-            else if(product.name === 'update'){
-                // const custToUpdate = await Customer.findOne({_id: purchase.customer})
+            else if(prodName === 'update'){
                 const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
-                update.paymentPending = false
-                customer.pendingPayments.update = false
-                if(update.updateApproved){
-                    customer = await applyCustomerUpdate(customer, update)
+                if(update){
+                    update.paymentPending = false
+                    await update.save()
+
                 }
-                await update.save()
+                customer.pendingPayments.update = false
+                customer.pendingPayments.updateNum = 0
+                customer.pendingPayments.basicInfo = {}
+                customer.pendingPayments.personalityInfo = {}
+            }
+            else if(prodName === 'premiumPlacement'){
+                customer.customerStatus.premiumPlacement = true 
+                customer.customerStatus.premiumExpires = extendDateByMonth(customer.customerStatus.premiumExpires, 1)
+            }
+            else if(prodName === 'featuredPlacement'){
+                customer.customerStatus.featuredPlacement = true
+                customer.customerStatus.featuredExpires = extendDateByMonth(customer.customerStatus.featuredExpires, 1)
+            }
+            else if(prodName === 'wordLimit'){
+                customer.pendingPayments.wordLimit = 0
+
+                customer.customerStatus.wordLimitExtended = true
+                customer.customerStatus.bioWordLimit += product.quantity * 100
+            }
+            else if(prodName === 'photo'){
+                customer.pendingPayments.photo = false
+                customer.pendingPayments.totalPaidPhotos = 0
+
+                customer.customerStatus.photoLimit += product.quantity
             }
             else if(product.name === 'premiumPlacement'){
                 customer.placementFlags.premiumPlacement = true 
@@ -176,7 +239,20 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             }
             await purchase.save()
         }
+
+        customer = await updatePendingPayments(customer)
+        customer.markModified('customerStatus')
+        customer.markModified('pendingPayments')
         await customer.save()
+        return reply.send({
+            data:{
+                status: session.status
+                // customerEmail: session.customer_details.email
+            },
+            message: 'Session retrieved successful checkout',
+            status_code: 200,
+            event_code:1
+        })
     }
     catch(err){
         console.error(err)
