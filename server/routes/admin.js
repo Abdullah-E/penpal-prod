@@ -34,6 +34,10 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
     try{
         const param = request.query
         const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+
+        const page = parseInt(param["p"] || 0)
+        const limit = parseInt(param["l"] || 50)
+
         const approvedBool = param["approved"] === "true"?true:false
         const paymentBool = param["paymentPending"] === "true"?true:false
 
@@ -43,7 +47,7 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
             "pendingPayments.creation":paymentBool
         }
         
-        const customers = await Customer.find(query).exec();
+        const customers = await Customer.find(query).skip(page*limit).limit(limit).exec();
         reply.send({
             data: customers,
             message: `${approvedBool?'':'un'}approved customers found successfully`,
