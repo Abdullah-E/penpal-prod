@@ -9,6 +9,7 @@ import CustomerUpdate from '../models/customerUpdate.js'
 import { verifyToken } from '../utils/firebase_utils.js'
 import {applyCustomerUpdate} from '../utils/db_utils.js'
 import { extendDateByMonth } from '../utils/misc_utils.js'
+import { extendDateByMonth } from '../utils/misc_utils.js'
 
 import Stripe from 'stripe'
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
@@ -227,6 +228,14 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
                 customer.pendingPayments.totalPaidPhotos = 0
 
                 customer.customerStatus.photoLimit += product.quantity
+            }
+            else if(product.name === 'premiumPlacement'){
+                customer.placementFlags.premiumPlacement = true 
+                customer.placementFlags.premiumExpires = extendDateByMonth(customer.placementFlags.premiumExpires, 1)
+            }
+            else if(product.name === 'featuredPlacement'){
+                customer.placementFlags.featuredPlacement = true
+                customer.placementFlags.featuredExpires = extendDateByMonth(customer.placementFlags.featuredExpires, 1)
             }
             await purchase.save()
         }
