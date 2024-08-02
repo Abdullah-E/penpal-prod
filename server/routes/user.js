@@ -66,7 +66,7 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
     reply.status(201).send({
       data: {
         databaseObject:userObj,
-        firebasebObject:fb_user.user
+        firebaseObject:fb_user.user
       },
       event_code: 1,
       message: "User created successfully",
