@@ -120,9 +120,9 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         }else{
             query = {
                 ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
-                "customerStatus.profileApproved":true,
-                "pendingPayments.creation":false,
-                "customerStatus.status":"active"
+                // "customerStatus.profileApproved":true,
+                // "pendingPayments.creation":false,
+                // "customerStatus.status":"active"
             }
         }
 
