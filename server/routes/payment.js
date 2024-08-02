@@ -27,7 +27,8 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
     try{
 
         const {cid, wordLimit, totalPaidPhotos,  basicInfo, personalityInfo} = request.body
-        const base_url = request.body.base_url || 'https://app.awayoutpenpals.com'
+        const base_url = request.body.url || 'https://app.awayoutpenpals.com'
+
         const boughtProductsSet = new Set()
         for(const key of Object.keys(request.body)){
             if(typeof request.body[key]  === typeof true){
