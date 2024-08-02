@@ -38,14 +38,17 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         if(wordLimit && wordLimit>0) boughtProductsSet.add('wordLimit')
         if(totalPaidPhotos && totalPaidPhotos>0) boughtProductsSet.add('photo')
         let updateNum = 0
-        if(basicInfo){
-            updateNum += Object.keys(basicInfo).length 
-        } 
-        if(personalityInfo){
-            updateNum += Object.keys(personalityInfo).length
-        }
-        if(updateNum>0){
-            boughtProductsSet.add('update')
+        if(!boughtProductsSet.has('creation')){
+            if(basicInfo){
+                updateNum += Object.keys(basicInfo).length 
+            } 
+            if(personalityInfo){
+                updateNum += Object.keys(personalityInfo).length
+            }
+            if(updateNum>0){
+                boughtProductsSet.add('update')
+            }
+
         }
         
         console.log('Update num', updateNum)
