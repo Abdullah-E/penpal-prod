@@ -330,7 +330,7 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
         const n = request.query.n || 5;
         const customers = await Customer.aggregate([
             {$match:{"customerStatus.profileApproved":true, "customerStatus.status":"active"}},
-            {$project:{_id:0, "basicInfo.firstName":1, "basicInfo.lastName":1, rating:1, "photos.imageUrl":1, "basicInfo.age":1, "basicInfo.state":1, "basicInfo.tag":1}},
+            {$project:{_id:0, "basicInfo.firstName":1, "basicInfo.lastName":1, rating:1, "photos.imageUrl":1, "basicInfo.age":1, "basicInfo.state":1, "customerStatus.tag":1}},
             {$sample:{size:parseInt(n)}},
         ]).exec();
 
