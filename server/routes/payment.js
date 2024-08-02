@@ -193,12 +193,15 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             }
             else if(prodName === 'update'){
                 const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
-                update.paymentPending = false
+                if(update){
+                    update.paymentPending = false
+                    await update.save()
+
+                }
                 customer.pendingPayments.update = false
                 customer.pendingPayments.updateNum = 0
                 customer.pendingPayments.basicInfo = {}
                 customer.pendingPayments.personalityInfo = {}
-                await update.save()
             }
             else if(prodName === 'premiumPlacement'){
                 customer.customerStatus.premiumPlacement = true 
