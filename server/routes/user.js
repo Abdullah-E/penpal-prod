@@ -358,26 +358,16 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
         status_code: 200,
       });
     }
-    
-    const customerList = await User.aggregate([
-      {$match:{firebaseUid:request.user.uid}},
-      {$project:{compatibleCustomers:1,_id:0}},
-      {$lookup:{
-        from:"customers",
-        localField:"compatibleCustomers.customerId",
-        foreignField:"_id",
-        as:"compatibleCustomers"
-      }},
-      {$unwind:"$compatibleCustomers"},
-      {$replaceRoot:{newRoot:"$compatibleCustomers"}},
-      {$skip:(page)*limit},
-      {$limit:parseInt(limit)},
-    ]).exec()
-    // console.log(customerList)
+
+    const test_list = await User.findOne({firebaseUid:request.user.uid}).populate("compatibleCustomers.customerId").exec()
+    const customerList = test_list.compatibleCustomers.map(cust => cust.customerId).slice(page*limit, page*limit+limit)
+    //firstnames of customers:
+    console.log(customerList.map(cust => cust.basicInfo.firstName))
+
     let matches = await flagFavorites(user, customerList)
     matches = await flagRatings(user, matches)
     //sort matches by ratings
-    matches = matches.sort((a,b) => b.rating - a.rating)
+    // matches = matches.sort((a,b) => b.rating - a.rating)
     reply.send({
       data: matches,
       event_code: 1,
