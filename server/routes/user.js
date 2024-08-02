@@ -197,7 +197,8 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
 });
 
 fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
-  const { personalityInfo } = request.body;
+  const { personality } = request.body;
+  cons
   if (!request.user) {
     reply.code(401).send({
       data: null,
@@ -218,8 +219,9 @@ fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
       });
       return;
     }
-    user.personalityInfo = personalityInfo;
+    user.personalityInfo = personality;
     // user.profileComplete = true;
+    user.markModified("personalityInfo");
     await user.save();
     const userObj = user.toObject();
     delete userObj.password;
