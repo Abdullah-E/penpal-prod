@@ -111,11 +111,22 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         //specify other params here
         const page = param["p"] || 0
         const limit = param["l"] || 50
-        const query = {
-            ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
-            
-            //add them in here
+        let query = {}
+        if(ids && ids.length === 1){
+            query = {
+                ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+                //add them in here
+            }
+        }else{
+            query = {
+                ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
+                "customerStatus.profileApproved":true,
+                "pendingPayments.creation":false
+            }
         }
+
+        // const approvedBool = param["approved"] === "true"?true:false
+        // const paymentBool = param["paymentPending"] === "true"?true:false
         let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
         // const fb_user = await getUserFromToken(request);
         if(request.user && request.user.role === "user"){

@@ -1,20 +1,20 @@
 import Customer from "../models/customer.js"
 import User from "../models/user.js"
 import { calculateCompatibility, findInsertionIndex } from "../utils/db_utils.js"
-const query = {
+export const activeCustQuery = {
     $or:[
-        {lastMatched: {$lt: new Date(new Date() - 24 * 60 * 60 * 1000)}},
-        {lastMatched: {$exists: false}},
-        {lastMatched: null}
+        {"customerStatus.lastMatched": {$lt: new Date(new Date() - 24 * 60 * 60 * 1000)}},
+        {"customerStatus.lastMatched": {$exists: false}},
+        {"customerStatus.lastMatched": null}
     ],
-    profileApproved: true            
+    "customerStatus.profileApproved": true            
 }
 
 const matchCustomers = async () => {
     try{
         //last matched should be more than 24 hours ago or not specified
         console.log("Updating matches")
-        const customers = await Customer.find(query)
+        const customers = await Customer.find(activeCustQuery)
         if(customers.length === 0){
             console.log("No customers to match")
             return
@@ -39,7 +39,8 @@ const matchCustomers = async () => {
                 user.compatibleCustomers = user.compatibleCustomers.slice(0, 50)
                 user_updated = true
 
-                customer.lastMatched = new Date()
+                customer.customerStatus.lastMatched = new Date()
+                customer.markModified("customerStatus")
                 await customer.save()
             }
             if(user_updated){
@@ -51,7 +52,8 @@ const matchCustomers = async () => {
 
         if(!cust_update){
             customers.forEach(async customer=>{
-                customer.lastMatched = new Date()
+                customer.customerStatus.lastMatched = new Date()
+                customer.markModified("customerStatus")
                 await customer.save()
             })
         }

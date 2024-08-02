@@ -236,7 +236,7 @@ fastify.put(BASE_URL+"/admin/reject-update", async (request, reply) => {
             customer.pendingPayments.personalityInfo = {}
             customer = updatePendingPayments(customer)
             updatedCustomers.push(customer)
-
+            customer.markModified("pendingPayments")
             await customer.save()
         }
         reply.send({
