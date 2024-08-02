@@ -198,7 +198,6 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
 
 fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
   const { personality } = request.body;
-  cons
   if (!request.user) {
     reply.code(401).send({
       data: null,
