@@ -51,8 +51,6 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         if(updateNum>0){
             boughtProductsSet.add('update')
         }
-
-        
         
         console.log('Update num', updateNum)
         const products = await Product.find({name: [...boughtProductsSet]}).exec()
