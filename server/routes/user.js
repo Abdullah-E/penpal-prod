@@ -62,8 +62,12 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
     });
     const userObj = user.toObject();
     delete userObj.password;
+    console.log(fb_user)
     reply.status(201).send({
-      data: userObj,
+      data: {
+        databaseObject:userObj,
+        firebasebObject:fb_user.user
+      },
       event_code: 1,
       message: "User created successfully",
       status_code: 201,
