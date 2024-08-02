@@ -106,7 +106,7 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
     try{
         //id could be string or array of strings
         const param = request.query
-        const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const ids = param["id"] && Array.isArray(param["id"])?param["id"]: [param["id"]]
         const sort_on = param["sort_on"] || "createdAt"
         //specify other params here
         const page = param["p"] || 0
