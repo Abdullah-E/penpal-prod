@@ -111,24 +111,28 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         //specify other params here
         const page = param["p"] || 0
         const limit = param["l"] || 50
-        let query = {}
-        if(ids && ids.length === 1){
-            query = {
-                ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
-                //add them in here
-            }
-        }else{
-            query = {
-                ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
-                // "customerStatus.profileApproved":true,
-                // "pendingPayments.creation":false,
-                // "customerStatus.status":"active"
-            }
+        console.log(ids)
+        let query = {
+            ...(param["id"] && ids && ids.length > 0 ? {_id:{$in:ids}} : {})
         }
+        // if(ids && ids.length === 1){
+        //     query = {
+        //         ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+        //         //add them in here
+        //     }
+        // }else{
+        //     query = {
+        //         ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
+        //         // "customerStatus.profileApproved":true,
+        //         // "pendingPayments.creation":false,
+        //         // "customerStatus.status":"active"
+        //     }
+        // }
 
         // const approvedBool = param["approved"] === "true"?true:false
         // const paymentBool = param["paymentPending"] === "true"?true:false
         let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
+        // let customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
         // const fb_user = await getUserFromToken(request);
         if(request.user && request.user.role === "user"){
             const user = await User.findOne({firebaseUid:request.user.uid}).exec()
