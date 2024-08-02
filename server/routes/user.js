@@ -2,8 +2,7 @@ import { fastify, BASE_URL } from "./init.js";
 import { auth, admin } from "../config/firebase.js";
 import {
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendEmailVerification
+  signInWithEmailAndPassword
 } from "firebase/auth";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
@@ -72,7 +71,7 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       message: "User created successfully",
       status_code: 201,
     });
-    await sendEmailVerification(fb_user.user);
+    // await sendEmailVerification(fb_user.user);
   } catch (error) {
     console.error(error);
 
