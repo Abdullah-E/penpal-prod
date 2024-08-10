@@ -63,7 +63,7 @@ const RELIGION_TYPES = [
     "Agnostic",
     "Atheist",
     "Baptist",
-    "Buddhis",
+    "Buddhist",
     "Catholic",
     "Christian",
     "Hindu",
