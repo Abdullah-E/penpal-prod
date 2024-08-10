@@ -42,8 +42,9 @@ const parseCustomerInfo = (body) => {
         customer["basicInfo"][field] === "" ? 
             (customerDefaultValues["basicInfo"][field]?customerDefaultValues["basicInfo"][field]:"" ): customer["basicInfo"][field]
     })
-    customer["personalityInfo"] = body["personalityInfo"]
-    customer["photos"] = body["photos"]
+    
+    customer["personalityInfo"] = body["personalityInfo"]?body["personalityInfo"]:customerDefaultValues["personalityInfo"]
+    customer["photos"] = body["photos"]?body["photos"]:customerDefaultValues["photos"]
     return customer
 
 }
