@@ -38,19 +38,15 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
         const page = parseInt(param["p"] || 0)
         const limit = parseInt(param["l"] || 50)
 
-        const approvedBool = param["approved"] === "true"?true:false
-        const paymentBool = param["paymentPending"] === "true"?true:false
-
         const query = {
-            ...(id && id.length > 0 ? {_id:{$in:id}} : {}),
-            ...(param["approved"]?{"customerStatus.profileApproved":approvedBool}:{}),
-            "pendingPayments.creation":paymentBool
+            ...(id && id.length > 0 ? {_id:{$in:id}} : {})
         }
         
-        const customers = await Customer.find(query).skip(page*limit).limit(limit).exec();
+        let customers = await Customer.find(query).skip(page*limit).limit(limit).exec();
+        
         reply.send({
-            data: customers,
-            message: `${approvedBool?'':'un'}approved customers found successfully`,
+            data: customers.length === 1 ? customers[0] : customers,
+            message: `Customer${customers.length === 1? "":"s"} found successfully`,
             event_code: 1,
             status_code: 200
         })
