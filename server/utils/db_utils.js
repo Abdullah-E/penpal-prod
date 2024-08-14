@@ -2,8 +2,13 @@ export const flagFavorites = async (user, customers) => {
 
     const {favorite:favoriteList} = await user.populate("favorite")
     // console.log(favoriteList)
+    // console.log(favoriteList, user)
     if(!favoriteList){
-        customers = customers.map(customer=>{customer.isFavorite = false; return customer;})
+        customers.map(customer=>{
+            customer.isFavorite = false;
+            return customer;
+        })
+        console.log(customers[0])
         return customers;
     }
     customers = customers.map(customer=>{
@@ -109,4 +114,8 @@ export const applyCustomerUpdate = async (customer, update) => {
     
     customer["customerStatus"]["recentlyUpdated"] = true
     return customer
+}
+
+export const findCustomers = async (user, bools, flags) => {
+    
 }

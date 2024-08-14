@@ -114,33 +114,31 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         const limit = param["l"] || 50
         console.log(ids)
         let query = {
-            ...(param["id"] && ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+            ...(param["id"] && ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
+            "customerStatus.profileApproved":true
         }
-        // if(ids && ids.length === 1){
-        //     query = {
-        //         ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
-        //         //add them in here
-        //     }
-        // }else{
-        //     query = {
-        //         ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
-        //         // "customerStatus.profileApproved":true,
-        //         // "pendingPayments.creation":false,
-        //         // "customerStatus.status":"active"
-        //     }
-        // }
-
-        // const approvedBool = param["approved"] === "true"?true:false
-        // const paymentBool = param["paymentPending"] === "true"?true:false
+        if(ids && ids.length === 1){
+            if(request.user && request.user.role === "user"){
+                var user = await User.findOne({firebaseUid:request.user.uid}).exec()
+                if(user.createdCustomers.includes(ids[0])){
+                    query = {_id:ids[0]}
+                }else{
+                    query = {_id:ids[0], "customerStatus.profileApproved":true}
+                }
+            }else{
+                query = {_id:ids[0]}
+            }
+        }
+        
         let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
-        // let customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
-        // const fb_user = await getUserFromToken(request);
+
         if(request.user && request.user.role === "user"){
-            const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+
             customers = await flagFavorites(user, customers)
             customers = await flagRatings(user, customers)
             customers = await flagCreated(user, customers)
             customers = flagUpdated(customers)
+
             // console.log(customers)
         }
         
