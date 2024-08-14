@@ -171,7 +171,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             if(prodName === 'creation'){
                 customer.pendingPayments.creation = false
                 // customer.customerStatus.status = 'active'
-                customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
+                // customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
             }
             else if(prodName === 'renewal'){
                 console.log('Renewal product')

@@ -8,7 +8,7 @@ export const flagFavorites = async (user, customers) => {
             customer.isFavorite = false;
             return customer;
         })
-        console.log(customers[0])
+        // console.log(customers[0])
         return customers;
     }
     customers = customers.map(customer=>{

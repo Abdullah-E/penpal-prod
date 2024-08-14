@@ -115,17 +115,20 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         console.log(ids)
         let query = {
             ...(param["id"] && ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
-            "customerStatus.profileApproved":true
+            "customerStatus.status":'active'
         }
         if(ids && ids.length === 1){
             if(request.user && request.user.role === "user"){
                 var user = await User.findOne({firebaseUid:request.user.uid}).exec()
                 if(user.createdCustomers.includes(ids[0])){
+                    console.log("user created customer")
                     query = {_id:ids[0]}
                 }else{
-                    query = {_id:ids[0], "customerStatus.profileApproved":true}
+                    console.log("user not created customer")
+                    query = {_id:ids[0], "customerStatus.status":'active'}
                 }
             }else{
+                console.log("admin")
                 query = {_id:ids[0]}
             }
         }
@@ -138,7 +141,6 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             customers = await flagRatings(user, customers)
             customers = await flagCreated(user, customers)
             customers = flagUpdated(customers)
-
             // console.log(customers)
         }
         

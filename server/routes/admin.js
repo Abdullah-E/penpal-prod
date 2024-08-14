@@ -6,6 +6,7 @@ import CustomerUpdate from "../models/customerUpdate.js"
 
 import { getUserFromToken } from "../utils/firebase_utils.js"
 import { applyCustomerUpdate } from "../utils/db_utils.js"
+import { extendDateByMonth } from "../utils/misc_utils.js";
 
 fastify.addHook("onRequest", async (request, reply) => {
     if (request.routeOptions.url && request.routeOptions.url.startsWith(BASE_URL+"/admin")){
@@ -72,7 +73,7 @@ fastify.put(BASE_URL+"/admin/approve-customer", async (request, reply) => {
         const customers = await Customer.updateMany(query, {
             "customerStatus.profileApproved":true, 
             createdAt:Date.now(), 
-            "customerStatus.expiresAt":Date.now() + 1000*60*60*24*365, 
+            "customerStatus.expiresAt":extendDateByMonth(Date.now(), 12),
             "customerStatus.newlyListed":true,
             "customerStatus.tag":"New Profile",
             "customerStatus.status":"active"
