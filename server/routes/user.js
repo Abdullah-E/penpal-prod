@@ -346,11 +346,32 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     const {p:page, l:limit} = request.query;
     const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
     if (user.profileComplete == false) {
-      let matches = await Customer.find({
-        "customerStatus.profileApproved":true,
-        "pendingPayments.creation":false,
-        "customerStatus.status":"active"
-      }).sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
+      // let matches = await Customer.find({
+      //   "customerStatus.profileApproved":true,
+      //   "pendingPayments.creation":false,
+      //   "customerStatus.status":"active"
+      // }).sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
+      let matches = await Customer.aggregate([
+        {$match:{
+          "customerStatus.profileApproved":true,
+          "pendingPayments.creation":false,
+          "customerStatus.status":"active"
+        }},
+        {$set:{"weight":{
+          $cond:[
+              {$eq:["$customerStatus.premiumPlacement", true]},
+              2,
+              {$cond:[
+                  {$eq:["$customerStatus.featuredPlacement", true]},
+                  1,
+                  0
+              ]}
+          ]
+        }}},
+        {$sort:{weight:-1}},
+        {$skip:page*limit},
+        {$limit:parseInt(limit)}
+      ]).exec()
       matches = await flagFavorites(user, matches)
       matches = await flagRatings(user, matches)
       matches = await flagCreated(user, matches)
