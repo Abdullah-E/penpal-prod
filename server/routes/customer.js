@@ -112,14 +112,14 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         //specify other params here
         const page = param["p"] || 0
         const limit = param["l"] || 50
-        console.log(ids)
         let query = {
             ...(param["id"] && ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
             "customerStatus.status":'active'
         }
-        if(ids && ids.length === 1){
+        const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+        console.log(query)
+        if(param["id"] && ids.length === 1){
             if(request.user && request.user.role === "user"){
-                var user = await User.findOne({firebaseUid:request.user.uid}).exec()
                 if(user.createdCustomers.includes(ids[0])){
                     console.log("user created customer")
                     query = {_id:ids[0]}
@@ -133,10 +133,35 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             }
         }
         
-        let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
+        // let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
+        let customers = await Customer.aggregate([
+            {$match:query},
+            {$project:{
+                "basicInfo":1, "personalityInfo":1, "photos":1, "imageId":1,
+                "rating":1, "numRatings":1, 
+                "customerStatus":1, "customerUpdate":1, "pendingPayments":1, "createdAt":1,
+
+                "weight":{
+                    $cond:[
+                        {$eq:["$customerStatus.premiumPlacement", true]},
+                        2,
+                        {$cond:[
+                            {$eq:["$customerStatus.featuredPlacement", true]},
+                            1,
+                            0
+                        ]}
+                    ]
+                }
+            }},
+            {$lookup:{from:"customerupdates", localField:"customerUpdate", foreignField:"_id", as:"customerUpdate"}},
+            {$sort:{"weight":-1,[sort_on]:-1}},
+            {$skip:page*limit},
+            {$limit:parseInt(limit)},
+        ]).exec();
+        // console.log(customers)
 
         if(request.user && request.user.role === "user"){
-
+            console.log(user)
             customers = await flagFavorites(user, customers)
             customers = await flagRatings(user, customers)
             customers = await flagCreated(user, customers)
