@@ -1,5 +1,6 @@
 import { fastify, BASE_URL } from "./init.js";
 import mongoose from "mongoose";
+// import {ObjectId} from "mongodb";
 
 import Customer, {customerDefaultValues, updatePendingPayments, DeletedCustomer} from "../models/customer.js";
 import User from "../models/user.js";
@@ -112,12 +113,17 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         //specify other params here
         const page = param["p"] || 0
         const limit = param["l"] || 50
+
+        if(param["id"] && ids.length >0){
+            ids.map((id, index) => {
+                ids[index] =new mongoose.Types.ObjectId(id)
+            })
+        }
         let query = {
             ...(param["id"] && ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
-            "customerStatus.status":'active'
+            // "customerStatus.status":'active'
         }
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
-        console.log(query)
         if(param["id"] && ids.length === 1){
             if(request.user && request.user.role === "user"){
                 if(user.createdCustomers.includes(ids[0])){
@@ -132,8 +138,9 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
                 query = {_id:ids[0]}
             }
         }
-        
+
         // let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
+        // let customers = await Customer.find(query).exec();
         let customers = await Customer.aggregate([
             {$match:query},
             {$project:{
@@ -158,10 +165,9 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             {$skip:page*limit},
             {$limit:parseInt(limit)},
         ]).exec();
-        // console.log(customers)
 
         if(request.user && request.user.role === "user"){
-            console.log(user)
+            // console.log(user)
             customers = await flagFavorites(user, customers)
             customers = await flagRatings(user, customers)
             customers = await flagCreated(user, customers)
