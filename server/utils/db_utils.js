@@ -133,10 +133,10 @@ const optionsMap = {
         "basicInfo.veteranStatus":{$not:{$in:["", "Never Served"]}}
     },
     "male":{
-        "basicInfo.gender":"Male"
+        "basicInfo.gender":{$in:["Male", "Transgender Females to Male"]}
     },
     "female":{
-        "basicInfo.gender":"Female"
+        "basicInfo.gender":{$in:["Female", "Transgender Male to Female"]}
     },
     "recentlyUpdated":{
         "customerStatus.recentlyUpdated":true
