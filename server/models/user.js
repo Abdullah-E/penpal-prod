@@ -122,6 +122,10 @@ const userSchema = new mongoose.Schema({
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'CustomerUpdate'
     },
+    notifications:{
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'Notification'
+    }
 })
 
 userSchema.pre('save', async function(next) {
