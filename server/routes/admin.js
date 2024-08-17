@@ -66,6 +66,8 @@ fastify.put(BASE_URL+"/admin/customer", async (request, reply) => {
     try{
         const update = {}
         update.newBody = request.body
+
+        const param = request.query
         const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const query = {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
