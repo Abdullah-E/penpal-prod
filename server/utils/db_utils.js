@@ -116,6 +116,43 @@ export const applyCustomerUpdate = async (customer, update) => {
     return customer
 }
 
-export const findCustomers = async (user, bools, flags) => {
-    
+const optionsMap = {
+    "lgbtq+":{
+        "basicInfo.orientation":{$not:{$in:["Straight", ""]}}
+    },
+    "premiumPlacement":{
+        "customerStatus.premiumPlacement":true
+    },
+    "featuredPlacement":{
+        "customerStatus.featuredPlacement":true
+    },
+    "newlyListed":{
+        "customerStatus.newlyListed":true
+    },
+    "veteran":{
+        "basicInfo.veteranStatus":{$not:{$in:["", "Never Served"]}}
+    },
+    "male":{
+        "basicInfo.gender":"Male"
+    },
+    "female":{
+        "basicInfo.gender":"Female"
+    },
+    "recentlyUpdated":{
+        "customerStatus.recentlyUpdated":true
+    },
+    "viewAll":{}
+}
+
+export const queryFromOptions = (options) => {
+    let query = {}
+    // console.log(optionsMap["lgbtq+"])
+    if(options.includes("viewAll")){
+        return query
+    }
+    options.forEach(option=>{
+        query = {...query, ...optionsMap[option]}
+        console.log(optionsMap[option])
+    })
+    return query
 }
