@@ -62,6 +62,41 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
     }
 })
 
+fastify.put(BASE_URL+"/admin/customer", async (request, reply) => {
+    try{
+        const update = {}
+        update.newBody = request.body
+        const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const query = {
+            ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+        }
+        
+        // const customers = await Customer.updateMany(query, {
+        //     ...param
+        // }, {new:true}).lean().exec()
+        
+        const customersToUpdate = await Customer.find(query).exec()
+        for (let customer of customersToUpdate){
+            const newCustomer = await applyCustomerUpdate(customer, update)
+            await newCustomer.save()
+        }
+        reply.send({
+            data: customersToUpdate,
+            message: `Customers updated successfully`,
+            event_code: 1,
+            status_code: 200
+        })
+    }
+    catch(err){
+        reply.code(500).send({
+            data:null,
+            message:err.message,
+            status_code:500,
+            event_code:0
+        })
+    }
+})
+
 fastify.put(BASE_URL+"/admin/approve-customer", async (request, reply) => {
     try{
         const param = request.query

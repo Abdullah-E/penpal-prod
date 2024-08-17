@@ -121,7 +121,7 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         }
         let query = {
             ...(param["id"] && ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
-            // "customerStatus.status":'active'
+            "customerStatus.status":'active'
         }
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
         if(param["id"] && ids.length === 1){
