@@ -383,7 +383,7 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
       });
     }
 
-    const test_list = await User.findOne({firebaseUid:request.user.uid}).populate("compatibleCustomers.customerId").exec()
+    const test_list = await User.findOne({firebaseUid:request.user.uid}).populate("compatibleCustomers.customerId").lean().exec()
     const customerList = test_list.compatibleCustomers.map(cust => cust.customerId).slice(page*limit, page*limit+limit)
     //firstnames of customers:
     console.log(customerList.map(cust => cust.basicInfo.firstName))
