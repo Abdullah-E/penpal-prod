@@ -2,8 +2,13 @@ export const flagFavorites = async (user, customers) => {
 
     const {favorite:favoriteList} = await user.populate("favorite")
     // console.log(favoriteList)
+    // console.log(favoriteList, user)
     if(!favoriteList){
-        customers = customers.map(customer=>{customer.isFavorite = false; return customer;})
+        customers.map(customer=>{
+            customer.isFavorite = false;
+            return customer;
+        })
+        // console.log(customers[0])
         return customers;
     }
     customers = customers.map(customer=>{
@@ -109,4 +114,45 @@ export const applyCustomerUpdate = async (customer, update) => {
     
     customer["customerStatus"]["recentlyUpdated"] = true
     return customer
+}
+
+const optionsMap = {
+    "lgbtq+":{
+        "basicInfo.orientation":{$not:{$in:["Straight", ""]}}
+    },
+    "premiumPlacement":{
+        "customerStatus.premiumPlacement":true
+    },
+    "featuredPlacement":{
+        "customerStatus.featuredPlacement":true
+    },
+    "newlyListed":{
+        "customerStatus.newlyListed":true
+    },
+    "veteran":{
+        "basicInfo.veteranStatus":{$not:{$in:["", "Never Served"]}}
+    },
+    "male":{
+        "basicInfo.gender":{$in:["Male", "Transgender Females to Male"]}
+    },
+    "female":{
+        "basicInfo.gender":{$in:["Female", "Transgender Male to Female"]}
+    },
+    "recentlyUpdated":{
+        "customerStatus.recentlyUpdated":true
+    },
+    "viewAll":{}
+}
+
+export const queryFromOptions = (options) => {
+    let query = {}
+    // console.log(optionsMap["lgbtq+"])
+    if(options.includes("viewAll")){
+        return query
+    }
+    options.forEach(option=>{
+        query = {...query, ...optionsMap[option]}
+        console.log(optionsMap[option])
+    })
+    return query
 }

@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
 import admin from 'firebase-admin'
 
 const serviceAcc = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
@@ -23,3 +23,9 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig)
 export const auth = getAuth(firebaseApp)
 export {admin}
+
+const blankUserCreds = {
+  "email": "blankuser@email.com",
+  "password": "alakazam"
+}
+export const blankUser = await signInWithEmailAndPassword(auth, blankUserCreds.email, blankUserCreds.password)

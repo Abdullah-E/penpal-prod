@@ -16,6 +16,7 @@ function userComplete(user){
     if(!user.personalityInfo){
       return false
     }else if(Object.keys(user.personalityInfo).length === 0){
+      console.log('empty personality')
       return false
     }
     return fields_to_check.every(field => user[field] !== "")
@@ -121,11 +122,17 @@ const userSchema = new mongoose.Schema({
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'CustomerUpdate'
     },
+    notifications:{
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'Notification'
+    }
 })
 
 userSchema.pre('save', async function(next) {
     this.profileComplete = userComplete(this);
+    console.log('pre save', this.firstName, this.profileComplete)
     if (this.isModified('personalityInfo')) {
+        console.log('personalityInfo modified')
         const customers = await Customer.find({"customerStatus.profileApproved": true}).limit(50);
         const compatibilityScores = customers.map(customer => {
             // customer.lastMatched = new Date();

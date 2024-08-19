@@ -7,7 +7,7 @@ import CustomerUpdate from "../models/customerUpdate.js";
 import Favorite from "../models/favorite.js";
 
 import {verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings, flagCreated, flagUpdated } from "../utils/db_utils.js";
+import { flagFavorites, flagRatings, flagCreated, flagUpdated, queryFromOptions } from "../utils/db_utils.js";
 
 fastify.addHook('onRequest', async(request, reply)=>{
     const isExcludedRoute = 
@@ -42,8 +42,9 @@ const parseCustomerInfo = (body) => {
         customer["basicInfo"][field] === "" ? 
             (customerDefaultValues["basicInfo"][field]?customerDefaultValues["basicInfo"][field]:"" ): customer["basicInfo"][field]
     })
-    customer["personalityInfo"] = body["personalityInfo"]
-    customer["photos"] = body["photos"]
+    
+    customer["personalityInfo"] = body["personalityInfo"]?body["personalityInfo"]:customerDefaultValues["personalityInfo"]
+    customer["photos"] = body["photos"]?body["photos"]:customerDefaultValues["photos"]
     return customer
 
 }
@@ -108,34 +109,65 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
         const param = request.query
         const ids = param["id"] && Array.isArray(param["id"])?param["id"]: [param["id"]]
         const sort_on = param["sort_on"] || "createdAt"
+        const options = param["options"] && Array.isArray(param["options"])?param["options"]: [param["options"]]
         //specify other params here
         const page = param["p"] || 0
         const limit = param["l"] || 50
-        console.log(ids)
-        let query = {
-            ...(param["id"] && ids && ids.length > 0 ? {_id:{$in:ids}} : {})
-        }
-        // if(ids && ids.length === 1){
-        //     query = {
-        //         ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
-        //         //add them in here
-        //     }
-        // }else{
-        //     query = {
-        //         ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
-        //         // "customerStatus.profileApproved":true,
-        //         // "pendingPayments.creation":false,
-        //         // "customerStatus.status":"active"
-        //     }
-        // }
 
-        // const approvedBool = param["approved"] === "true"?true:false
-        // const paymentBool = param["paymentPending"] === "true"?true:false
-        let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
-        // let customers = await Customer.find(query).sort({[sort_on]:-1}).lean().exec();
-        // const fb_user = await getUserFromToken(request);
+        if(param["id"] && ids.length >0){
+            ids.map((id, index) => {
+                ids[index] =new mongoose.Types.ObjectId(id)
+            })
+        }
+        let query = {
+            ...(param["id"] && ids && ids.length > 0 ? {_id:{$in:ids}} : {}),
+            "customerStatus.status":'active',
+            ...queryFromOptions(options)
+        }
+        const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+        if(param["id"] && ids.length === 1){
+            if(request.user && request.user.role === "user"){
+                if(user.createdCustomers.includes(ids[0])){
+                    console.log("user created customer")
+                    query = {_id:ids[0]}
+                }else{
+                    console.log("user not created customer")
+                    query = {_id:ids[0], "customerStatus.status":'active'}
+                }
+            }else{
+                console.log("admin")
+                query = {_id:ids[0]}
+            }
+        }
+        // let customers = await Customer.find(query).skip(page*limit).limit(limit).populate('customerUpdate').sort({[sort_on]:-1}).lean().exec();
+        // let customers = await Customer.find(query).exec();
+        let customers = await Customer.aggregate([
+            {$match:query},
+            {$project:{
+                "basicInfo":1, "personalityInfo":1, "photos":1, "imageId":1,
+                "rating":1, "numRatings":1, 
+                "customerStatus":1, "customerUpdate":1, "pendingPayments":1, "createdAt":1,
+
+                "weight":{
+                    $cond:[
+                        {$eq:["$customerStatus.premiumPlacement", true]},
+                        2,
+                        {$cond:[
+                            {$eq:["$customerStatus.featuredPlacement", true]},
+                            1,
+                            0
+                        ]}
+                    ]
+                }
+            }},
+            {$lookup:{from:"customerupdates", localField:"customerUpdate", foreignField:"_id", as:"customerUpdate"}},
+            {$sort:{"weight":-1,[sort_on]:-1}},
+            {$skip:page*limit},
+            {$limit:parseInt(limit)},
+        ]).exec();
+
         if(request.user && request.user.role === "user"){
-            const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+            // console.log(user)
             customers = await flagFavorites(user, customers)
             customers = await flagRatings(user, customers)
             customers = await flagCreated(user, customers)
@@ -163,27 +195,16 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
 
 fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
-        const {id} = request.query
+        const params = request.query
+        const id = params["id"]
+        const overwrite = params["overwrite"] || false
+        // const {id} = request.query
         const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
-        // if(!userToUpdate.createdCustomers.includes(id)){
-        //     return reply.code(403).send({
-        //         data:null,
-        //         message:"Unauthorized - Not creator of customer",
-        //         event_code:0,
-        //         status_code:403
-        //     })
-        // }
+
         let customerToUpdate = await Customer.findOne({_id:id}).exec();
         let newUpdate
-        // if(customerToUpdate.pendingPayments.creation){
-        //     return reply.code(400).send({
-        //         data:null,
-        //         message:"creation pending",
-        //         event_code:0,
-        //         status_code:400
-        //     })
-        // }
-        if(customerToUpdate.customerUpdate){
+
+        if(!overwrite && customerToUpdate.customerUpdate){
             return reply.code(400).send({
                 data:null,
                 message:"update pending",
@@ -211,6 +232,8 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
 
         let fieldsCount = 0
         customerToUpdate.pendingPayments.wordLimit += request.body.wordLimit
+
+        let directUpdate = true
         if(newUpdate.newBody.basicInfo){
             const updatedFields = Object.keys(newUpdate.newBody.basicInfo)
             //map to object of bools
@@ -218,12 +241,12 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
                 acc[field] = true
                 return acc
             }, {})
-            // console.log("updated fields", customerToUpdate.pendingPayments.basicInfo)
 
             fieldsCount += updatedFields.length
             if(newUpdate.newBody.basicInfo.bio){
             }
-           
+            console.log("huh")
+            directUpdate = false
         }
         if(newUpdate.newBody.personalityInfo){
             const updatedFields = Object.keys(newUpdate.newBody.personalityInfo)
@@ -233,26 +256,23 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             }, {})
 
             fieldsCount += updatedFields.length
+            directUpdate = false
         }
         customerToUpdate.pendingPayments.totalPaidPhotos += request.body.totalPaidPhotos
         if(newUpdate.newBody.photos){
-            // const photosInNewBody = newUpdate.newBody.photos.artworks?.length + (newUpdate.newBody.photos.imageUrl?1:0)
-            // // fieldsCount +=  photosInNewBody
-            // const newPhotosCount = newUpdate.newBody.photos.artworks?.length + (customerToUpdate.photos.imageUrl?1:0) +customerToUpdate.photos.artworks.length
-
-            // // console.log("new photos count", newPhotosCount)
-            // if(newPhotosCount > customerToUpdate.customerStatus.photoLimit){
-            //     customerToUpdate.pendingPayments.photo = true
-            //     customerToUpdate.pendingPayments.totalPaidPhotos = newPhotosCount - customerToUpdate.customerStatus.photoLimit
-            //     customerToUpdate.pendingPayments.updatedPhotos = photosInNewBody
-            // }
             if(request.body.totalPaidPhotos > 0){
                 customerToUpdate.pendingPayments.photo = true
-
+                directUpdate = false
             }
         }
         customerToUpdate.pendingPayments.updateNum  = fieldsCount
         customerToUpdate = updatePendingPayments(customerToUpdate)
+
+        console.log("direct update", directUpdate)
+        if(directUpdate){
+            newUpdate.paymentPending = false
+        }
+
         await newUpdate.save()
         await customerToUpdate.save()
             
@@ -330,7 +350,7 @@ fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
         const n = request.query.n || 5;
         const customers = await Customer.aggregate([
             {$match:{"customerStatus.profileApproved":true, "customerStatus.status":"active"}},
-            {$project:{_id:0, "bascicInfo.firstName":1, "basicInfo.lastName":1, rating:1, "photos.imageUrl":1, "basicInfo.age":1, "basicInfo.state":1, "basicInfo.tag":1}},
+            {$project:{"basicInfo.firstName":1, "basicInfo.lastName":1, rating:1, "photos.imageUrl":1, "basicInfo.age":1, "basicInfo.state":1, "customerStatus.tag":1}},
             {$sample:{size:parseInt(n)}},
         ]).exec();
 

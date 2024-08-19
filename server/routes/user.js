@@ -2,8 +2,7 @@ import { fastify, BASE_URL } from "./init.js";
 import { auth, admin } from "../config/firebase.js";
 import {
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendEmailVerification
+  signInWithEmailAndPassword
 } from "firebase/auth";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
@@ -62,13 +61,17 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
     });
     const userObj = user.toObject();
     delete userObj.password;
+    console.log(fb_user)
     reply.status(201).send({
-      data: userObj,
+      data: {
+        databaseObject:userObj,
+        firebaseObject:fb_user.user
+      },
       event_code: 1,
       message: "User created successfully",
       status_code: 201,
     });
-    await sendEmailVerification(fb_user.user);
+    // await sendEmailVerification(fb_user.user);
   } catch (error) {
     console.error(error);
 
@@ -197,7 +200,7 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
 });
 
 fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
-  const { personalityInfo } = request.body;
+  const { personality } = request.body;
   if (!request.user) {
     reply.code(401).send({
       data: null,
@@ -218,8 +221,9 @@ fastify.put(BASE_URL + "/user/personality", async (request, reply) => {
       });
       return;
     }
-    user.personalityInfo = personalityInfo;
+    user.personalityInfo = personality;
     // user.profileComplete = true;
+    user.markModified("personalityInfo");
     await user.save();
     const userObj = user.toObject();
     delete userObj.password;
@@ -342,11 +346,32 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     const {p:page, l:limit} = request.query;
     const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
     if (user.profileComplete == false) {
-      let matches = await Customer.find({
-        "customerStatus.profileApproved":true,
-        "pendingPayments.creation":false,
-        "customerStatus.status":"active"
-      }).sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
+      // let matches = await Customer.find({
+      //   "customerStatus.profileApproved":true,
+      //   "pendingPayments.creation":false,
+      //   "customerStatus.status":"active"
+      // }).sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
+      let matches = await Customer.aggregate([
+        {$match:{
+          "customerStatus.profileApproved":true,
+          "pendingPayments.creation":false,
+          "customerStatus.status":"active"
+        }},
+        {$set:{"weight":{
+          $cond:[
+              {$eq:["$customerStatus.premiumPlacement", true]},
+              2,
+              {$cond:[
+                  {$eq:["$customerStatus.featuredPlacement", true]},
+                  1,
+                  0
+              ]}
+          ]
+        }}},
+        {$sort:{weight:-1}},
+        {$skip:page*limit},
+        {$limit:parseInt(limit)}
+      ]).exec()
       matches = await flagFavorites(user, matches)
       matches = await flagRatings(user, matches)
       matches = await flagCreated(user, matches)
@@ -357,26 +382,16 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
         status_code: 200,
       });
     }
-    
-    const customerList = await User.aggregate([
-      {$match:{firebaseUid:request.user.uid}},
-      {$project:{compatibleCustomers:1,_id:0}},
-      {$lookup:{
-        from:"customers",
-        localField:"compatibleCustomers.customerId",
-        foreignField:"_id",
-        as:"compatibleCustomers"
-      }},
-      {$unwind:"$compatibleCustomers"},
-      {$replaceRoot:{newRoot:"$compatibleCustomers"}},
-      {$skip:(page)*limit},
-      {$limit:parseInt(limit)},
-    ]).exec()
-    // console.log(customerList)
+
+    const test_list = await User.findOne({firebaseUid:request.user.uid}).populate("compatibleCustomers.customerId").lean().exec()
+    const customerList = test_list.compatibleCustomers.map(cust => cust.customerId).slice(page*limit, page*limit+limit)
+    //firstnames of customers:
+    console.log(customerList.map(cust => cust.basicInfo.firstName))
+
     let matches = await flagFavorites(user, customerList)
     matches = await flagRatings(user, matches)
     //sort matches by ratings
-    matches = matches.sort((a,b) => b.rating - a.rating)
+    // matches = matches.sort((a,b) => b.rating - a.rating)
     reply.send({
       data: matches,
       event_code: 1,

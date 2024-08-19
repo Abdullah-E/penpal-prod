@@ -27,7 +27,7 @@ fastify.addHook('onRequest', async (request, reply) => {
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
     try{
 
-        const {cid, wordLimit, totalPaidPhotos,  basicInfo, personalityInfo} = request.body
+        const {cid, wordLimit, totalPaidPhotos,  basicInfo, personalityInfo, featuredPlacement, premiumPlacement} = request.body
         const base_url = request.body.url || 'https://app.awayoutpenpals.com'
 
         const boughtProductsSet = new Set()
@@ -38,20 +38,22 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
                 }
             }
         }
+
         if(wordLimit && wordLimit>0) boughtProductsSet.add('wordLimit')
         if(totalPaidPhotos && totalPaidPhotos>0) boughtProductsSet.add('photo')
+        if(featuredPlacement && featuredPlacement>0) boughtProductsSet.add('featuredPlacement')
+        if(premiumPlacement && premiumPlacement>0) boughtProductsSet.add('premiumPlacement')
+        
         let updateNum = 0
-        if(!boughtProductsSet.has('creation')){
-            if(basicInfo){
-                updateNum += Object.keys(basicInfo).length 
-            } 
-            if(personalityInfo){
-                updateNum += Object.keys(personalityInfo).length
-            }
-            if(updateNum>0){
-                boughtProductsSet.add('update')
-            }
-
+        
+        if(basicInfo){
+            updateNum += Object.keys(basicInfo).length 
+        } 
+        if(personalityInfo){
+            updateNum += Object.keys(personalityInfo).length
+        }
+        if(updateNum>0){
+            boughtProductsSet.add('update')
         }
         
         console.log('Update num', updateNum)
@@ -61,30 +63,6 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         let totalAmount = 0
         const productsList = []
         const line_items = products.map(product => {
-            // if(product.name === 'update'){
-            //     productsList.push({
-            //         product: product._id,
-            //         quantity: update.num,
-            //         price: product.price
-            //     })
-            //     totalAmount += product.price * update.num
-            //     return {
-            //         price: product.priceId,
-            //         quantity: parseInt(update.num)
-            //     }
-            // }
-            // else if(product.name === 'wordLimit'){
-            //     productsList.push({
-            //         product: product._id,
-            //         quantity: wordLimit,
-            //         price: product.price
-            //     })
-            //     totalAmount += product.price * wordLimit
-            //     return {
-            //         price: product.priceId,
-            //         quantity: parseInt(wordLimit)
-            //     }
-            // }
             let quantity = 1
             if(product.name === 'wordLimit'){
                 quantity = wordLimit
@@ -94,6 +72,12 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             }
             else if (product.name === 'photo'){
                 quantity = totalPaidPhotos
+            }
+            else if(product.name === 'featuredPlacement'){
+                quantity = featuredPlacement
+            }
+            else if(product.name === 'premiumPlacement'){
+                quantity = premiumPlacement
             }
             totalAmount += product.price * quantity
             productsList.push({
@@ -183,11 +167,12 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         let customer = await Customer.findOne({_id: purchase.customer}).exec()
         for(const product of purchase.products){
             const prodName = product.product.name
+            console.log('Product', prodName)
             // purchase.status = session.status
             if(prodName === 'creation'){
                 customer.pendingPayments.creation = false
-                customer.customerStatus.status = 'active'
-                customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
+                // customer.customerStatus.status = 'active'
+                // customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
             }
             else if(prodName === 'renewal'){
                 console.log('Renewal product')
@@ -211,11 +196,11 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             }
             else if(prodName === 'premiumPlacement'){
                 customer.customerStatus.premiumPlacement = true 
-                customer.customerStatus.premiumExpires = extendDateByMonth(customer.customerStatus.premiumExpires, 1)
+                customer.customerStatus.premiumExpires = extendDateByMonth(customer.customerStatus.premiumExpires, product.quantity)
             }
             else if(prodName === 'featuredPlacement'){
                 customer.customerStatus.featuredPlacement = true
-                customer.customerStatus.featuredExpires = extendDateByMonth(customer.customerStatus.featuredExpires, 1)
+                customer.customerStatus.featuredExpires = extendDateByMonth(customer.customerStatus.featuredExpires, product.quantity)
             }
             else if(prodName === 'wordLimit'){
                 customer.pendingPayments.wordLimit = 0
@@ -229,14 +214,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
 
                 customer.customerStatus.photoLimit += product.quantity
             }
-            else if(product.name === 'premiumPlacement'){
-                customer.placementFlags.premiumPlacement = true 
-                customer.placementFlags.premiumExpires = extendDateByMonth(customer.placementFlags.premiumExpires, 1)
-            }
-            else if(product.name === 'featuredPlacement'){
-                customer.placementFlags.featuredPlacement = true
-                customer.placementFlags.featuredExpires = extendDateByMonth(customer.placementFlags.featuredExpires, 1)
-            }
+
             await purchase.save()
         }
 
