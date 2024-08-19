@@ -18,4 +18,5 @@ const updateTags = async () => {
     }
 }
 
-setInterval(updateTags, 24 * 60 * 1000)
+const intervalMs = 24 * 60 * 60 * 1000
+setInterval(updateTags, intervalMs)

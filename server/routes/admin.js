@@ -219,7 +219,7 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
                 continue
             }
             const update = await CustomerUpdate.findById(customer.customerUpdate._id)
-   
+            
             customer = await applyCustomerUpdate(customer, update)
             await customer.save()
 

@@ -1,6 +1,5 @@
 import { fastify, BASE_URL } from "./init.js";
 import mongoose from "mongoose";
-// import {ObjectId} from "mongodb";
 
 import Customer, {customerDefaultValues, updatePendingPayments, DeletedCustomer} from "../models/customer.js";
 import User from "../models/user.js";
@@ -196,27 +195,16 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
 
 fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
-        const {id} = request.query
+        const params = request.query
+        const id = params["id"]
+        const overwrite = params["overwrite"] || false
+        // const {id} = request.query
         const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
-        // if(!userToUpdate.createdCustomers.includes(id)){
-        //     return reply.code(403).send({
-        //         data:null,
-        //         message:"Unauthorized - Not creator of customer",
-        //         event_code:0,
-        //         status_code:403
-        //     })
-        // }
+
         let customerToUpdate = await Customer.findOne({_id:id}).exec();
         let newUpdate
-        // if(customerToUpdate.pendingPayments.creation){
-        //     return reply.code(400).send({
-        //         data:null,
-        //         message:"creation pending",
-        //         event_code:0,
-        //         status_code:400
-        //     })
-        // }
-        if(customerToUpdate.customerUpdate){
+
+        if(!overwrite && customerToUpdate.customerUpdate){
             return reply.code(400).send({
                 data:null,
                 message:"update pending",
@@ -244,6 +232,8 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
 
         let fieldsCount = 0
         customerToUpdate.pendingPayments.wordLimit += request.body.wordLimit
+
+        let directUpdate = true
         if(newUpdate.newBody.basicInfo){
             const updatedFields = Object.keys(newUpdate.newBody.basicInfo)
             //map to object of bools
@@ -251,12 +241,12 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
                 acc[field] = true
                 return acc
             }, {})
-            // console.log("updated fields", customerToUpdate.pendingPayments.basicInfo)
 
             fieldsCount += updatedFields.length
             if(newUpdate.newBody.basicInfo.bio){
             }
-           
+            console.log("huh")
+            directUpdate = false
         }
         if(newUpdate.newBody.personalityInfo){
             const updatedFields = Object.keys(newUpdate.newBody.personalityInfo)
@@ -266,26 +256,23 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             }, {})
 
             fieldsCount += updatedFields.length
+            directUpdate = false
         }
         customerToUpdate.pendingPayments.totalPaidPhotos += request.body.totalPaidPhotos
         if(newUpdate.newBody.photos){
-            // const photosInNewBody = newUpdate.newBody.photos.artworks?.length + (newUpdate.newBody.photos.imageUrl?1:0)
-            // // fieldsCount +=  photosInNewBody
-            // const newPhotosCount = newUpdate.newBody.photos.artworks?.length + (customerToUpdate.photos.imageUrl?1:0) +customerToUpdate.photos.artworks.length
-
-            // // console.log("new photos count", newPhotosCount)
-            // if(newPhotosCount > customerToUpdate.customerStatus.photoLimit){
-            //     customerToUpdate.pendingPayments.photo = true
-            //     customerToUpdate.pendingPayments.totalPaidPhotos = newPhotosCount - customerToUpdate.customerStatus.photoLimit
-            //     customerToUpdate.pendingPayments.updatedPhotos = photosInNewBody
-            // }
             if(request.body.totalPaidPhotos > 0){
                 customerToUpdate.pendingPayments.photo = true
-
+                directUpdate = false
             }
         }
         customerToUpdate.pendingPayments.updateNum  = fieldsCount
         customerToUpdate = updatePendingPayments(customerToUpdate)
+
+        console.log("direct update", directUpdate)
+        if(directUpdate){
+            newUpdate.paymentPending = false
+        }
+
         await newUpdate.save()
         await customerToUpdate.save()
             
