@@ -234,7 +234,8 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         customerToUpdate.pendingPayments.wordLimit += request.body.wordLimit
 
         let directUpdate = true
-        if(newUpdate.newBody.basicInfo){
+        console.log(newUpdate.newBody)
+        if(Object.keys(newUpdate.newBody.basicInfo).length > 0){
             const updatedFields = Object.keys(newUpdate.newBody.basicInfo)
             //map to object of bools
             customerToUpdate.pendingPayments.basicInfo = updatedFields.reduce((acc, field)=>{
@@ -248,7 +249,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             console.log("huh")
             directUpdate = false
         }
-        if(newUpdate.newBody.personalityInfo){
+        if(Object.keys(newUpdate.newBody.personalityInfo).length > 0){
             const updatedFields = Object.keys(newUpdate.newBody.personalityInfo)
             customerToUpdate.pendingPayments.personalityInfo = updatedFields.reduce((acc, field)=>{
                 acc[field] = true
