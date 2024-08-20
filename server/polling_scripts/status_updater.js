@@ -2,7 +2,7 @@ import Customer from "../models/customer.js";
 import Notification from "../models/notification.js";
 import User from "../models/user.js";
 
-import { frontendUrl } from "../index.js";
+// import { frontendUrl } from "../index.js";
 
 /*
     notifications when
@@ -101,7 +101,7 @@ const updateExpires = async () => {
             const newNotification = new Notification({
                 ...notification,
                 user: user._id,
-                link: `${frontendUrl}/admin/inmate/${notification.customer}`
+                link: `${process.env.FRONTEND_URL}/admin/inmate/${notification.customer}`
             })
             const createdNotification = await newNotification.save()
             

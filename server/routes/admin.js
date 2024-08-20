@@ -9,7 +9,7 @@ import { getUserFromToken } from "../utils/firebase_utils.js"
 import { applyCustomerUpdate } from "../utils/db_utils.js"
 import { extendDateByMonth } from "../utils/misc_utils.js";
 
-import { frontendUrl } from "../index.js";
+// import { frontendUrl } from "../index.js";
 
 fastify.addHook("onRequest", async (request, reply) => {
     if (request.routeOptions.url && request.routeOptions.url.startsWith(BASE_URL+"/admin")){
@@ -267,7 +267,7 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
                     readAt: null,
                     type: "customerUpdate",
                     message: `${customer.basicInfo.firstName} from your favorite list has been updated!`,
-                    link: `${frontendUrl}/customer/${customer._id}`,
+                    link: `${process.env.FRONTEND_URL}/customer/${customer._id}`,
                     customer: customer._id,
                     user: user._id
                 })
