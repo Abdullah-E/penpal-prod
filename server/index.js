@@ -2,7 +2,7 @@ import "dotenv/config";
 import { mongo } from "./config/db.js";
 import { fastify, BASE_URL } from "./routes/init.js";
 
-export const frontendUrl = process.env.FRONTEND_URL;
+export const frontendUrl = process.env.FRONTEND_URL || "https://app.awayoutpenpals.com";
 
 fastify.get(BASE_URL, async () => {
   return { message: "Welcome to Penpal API" };
