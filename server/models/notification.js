@@ -1,7 +1,19 @@
 import mongoose from 'mongoose'
+/*
+    notifications when
+        for admin
+            featured or premium status expires
+            profile expires
+        for user
+            favorite profile updated
+*/
+
 
 const NOTIFICATION_TYPES = [
-    "customer update"
+    "customerUpdate",
+    "featuredExpired",
+    "premiumExpired",
+    "profileExpired",
 ]
 
 const notificationSchema = new mongoose.Schema({
@@ -10,9 +22,15 @@ const notificationSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    customer:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: false
+    },
     type:{
         type:String,
-        required:true
+        required:true,
+        enum: NOTIFICATION_TYPES
     },
     message: {
         type: String,
@@ -29,7 +47,7 @@ const notificationSchema = new mongoose.Schema({
     },
     readAt: {
         type: Date,
-        required: true,
+        required: false,
         default: null
     }
 }, {timestamps: true})

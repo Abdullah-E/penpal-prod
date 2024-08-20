@@ -628,6 +628,28 @@ fastify.get(BASE_URL + "/user/favorite", async (request, reply) => {
   }
 })
 
+fastify.get(BASE_URL + "/user/notifications", async (request, reply) => {
+  try{
+    const user = await User.findOne({firebaseUid:request.user.uid}).populate("notifications").exec()
+    const notifications =  user.notifications
+    return reply.send({
+      data:notifications,
+      event_code:1,
+      message:"Notifications fetched successfully",
+      status_code:200
+    })
+  }
+  catch(err){
+    console.error(err)
+    return reply.status(500).send({
+      data:null,
+      event_code:0,
+      message:err.message,
+      status_code:500
+    })
+  }
+})
+
 fastify.get(BASE_URL+'/user/pending-payments', async (request, reply) => {
   try{
     const createdCustomers = await User.aggregate([

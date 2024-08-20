@@ -197,7 +197,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const params = request.query
         const id = params["id"]
-        const overwrite = params["overwrite"] || false
+        const overwrite = params["overwrite"] && params["overwrite"] === "true"?true:false
         // const {id} = request.query
         const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
 

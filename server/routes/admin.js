@@ -1,12 +1,15 @@
 import { fastify, BASE_URL } from "./init.js";
 
-// import User from "../models/user.js";
-import Customer, {updatePendingPayments} from "../models/customer.js"
+import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdate.js"
+import Notification from "../models/notification.js";
+import Customer, {updatePendingPayments} from "../models/customer.js"
 
 import { getUserFromToken } from "../utils/firebase_utils.js"
 import { applyCustomerUpdate } from "../utils/db_utils.js"
 import { extendDateByMonth } from "../utils/misc_utils.js";
+
+import { frontendUrl } from "../index.js";
 
 fastify.addHook("onRequest", async (request, reply) => {
     if (request.routeOptions.url && request.routeOptions.url.startsWith(BASE_URL+"/admin")){
@@ -233,6 +236,45 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
             event_code: 1,
             status_code: 200
         })
+
+        // generate notifications
+        
+        for(const customer of customersToUpdate){
+            // const customerId = customer._id
+            const customerFavoriteUsers = await User.aggregate([
+                {
+                    $lookup:{
+                        from:"favorites",
+                        localField:"favorite",
+                        foreignField:"_id",
+                        as:"favoriteInfo"
+                    }
+                },
+                {$unwind:"$favoriteInfo"},
+                {
+                    $match:{
+                        "favoriteInfo.favorites":customer._id
+                    }
+                }
+            ])
+            if(customerFavoriteUsers.length === 0){
+                // console.log("No favorite users found for customer", customer._id)
+                continue
+            }
+            for(const user of customerFavoriteUsers){
+                const newNotification = new Notification({
+                    read: false,
+                    readAt: null,
+                    type: "customerUpdate",
+                    message: `${customer.basicInfo.firstName} from your favorite list has been updated!`,
+                    link: `${frontendUrl}/customer/${customer._id}`,
+                    customer: customer._id,
+                    user: user._id
+                })
+                const createdNotification = await newNotification.save()
+                await User.updateOne({_id: user._id}, {$push: {notifications: createdNotification._id}})
+            }
+        }
     }
     catch(err){
         console.error(err)
