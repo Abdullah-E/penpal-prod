@@ -54,7 +54,7 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
         let customers = await Customer.find(query).skip(page*limit).limit(limit).exec();
         
         reply.send({
-            data: customers.length === 1 ? customers[0] : customers,
+            data: customers,
             message: `Customer${customers.length === 1? "":"s"} found successfully`,
             event_code: 1,
             status_code: 200

@@ -375,7 +375,6 @@ const customerSchema = new mongoose.Schema({
         required: true,
         default: Date.now
     },
-    
     customerUpdate: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CustomerUpdates'
