@@ -345,17 +345,23 @@ fastify.put(BASE_URL+"/admin/reject-update", async (request, reply) => {
     }
 })
 
-fastify.put(BASE_URL+"/admin/deactivate-customer", async (request, reply) => {
+fastify.put(BASE_URL+"/admin/customer-status", async (request, reply) => {
     try{
         const param = request.query
         const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const query = {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
         }
-        
+
+        const {status} = request.body
         const customers = await Customer.updateMany(query, {
-            "customerStatus.status":"inactive"
+            "customerStatus.status":status
         }, {new:true}).lean().exec()
+
+        
+        // const customers = await Customer.updateMany(query, {
+        //     "customerStatus.status":"inactive"
+        // }, {new:true}).lean().exec()
         reply.send({
             data: customers,
             message: `Customers deactivated successfully`,
