@@ -7,7 +7,7 @@ import CustomerUpdate from "../models/customerUpdate.js";
 import Favorite from "../models/favorite.js";
 
 import {verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings, flagCreated, flagUpdated, queryFromOptions } from "../utils/db_utils.js";
+import { flagFavorites, flagRatings, flagCreated, flagUpdated, queryFromOptions, flagCreatedBy } from "../utils/db_utils.js";
 
 fastify.addHook('onRequest', async(request, reply)=>{
     const isExcludedRoute = 
@@ -172,7 +172,8 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             customers = await flagRatings(user, customers)
             customers = await flagCreated(user, customers)
             customers = flagUpdated(customers)
-            // console.log(customers)
+            customers = await flagCreatedBy(customers)
+            console.log(customers)
         }
         
         

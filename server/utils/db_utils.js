@@ -1,3 +1,5 @@
+import User from "../models/user.js"
+
 export const flagFavorites = async (user, customers) => {
 
     const {favorite:favoriteList} = await user.populate("favorite")
@@ -51,6 +53,22 @@ export const flagUpdated = (customers) => {
         return customer
     })
     return customers
+}
+
+export const flagCreatedBy = async (customers) => {
+    const updatedCustomers = await Promise.all(
+        customers.map( async customer=>{
+        
+            const user = await User.findOne({"createdCustomers":customer._id})
+            if(user){
+                console.log(user._id)
+                customer.createdBy = user
+            }
+            console.log(customer.createdBy, customer.basicInfo.firstName)
+            return customer
+        })
+    )
+    return updatedCustomers
 }
 
 export function calculateCompatibility(userPersonality, customerPersonality) {
