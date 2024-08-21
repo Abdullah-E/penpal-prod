@@ -39,7 +39,7 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
         const param = request.query
         const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const approvedBool = param["approved"] === "true"?true:false
-        const paymentBool = param["paymentPending"] === "false"?true:false
+        const paymentBool = param["paymentPending"] === "false"?false:true
 
         const page = parseInt(param["p"] || 0)
         const limit = parseInt(param["l"] || 50)
@@ -49,6 +49,7 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
             ...(param["approved"]?{"customerStatus.profileApproved":approvedBool}:{}),
             ...(param["paymentPending"]?{"pendingPayments.creation":paymentBool}:{})
         }
+        console.log(query)
         
         let customers = await Customer.find(query).skip(page*limit).limit(limit).exec();
         
