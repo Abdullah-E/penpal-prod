@@ -135,6 +135,7 @@ const STATUS_TYPES = [
     "new",
     "active",
     "expired",
+    "inactive"
 ]
 
 const customerSchema = new mongoose.Schema({

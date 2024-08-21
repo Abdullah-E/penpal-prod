@@ -7,7 +7,7 @@ import Customer, {updatePendingPayments} from '../models/customer.js'
 import CustomerUpdate from '../models/customerUpdate.js'
 
 import { verifyToken } from '../utils/firebase_utils.js'
-import {applyCustomerUpdate} from '../utils/db_utils.js'
+// import {applyCustomerUpdate} from '../utils/db_utils.js'
 import { extendDateByMonth } from '../utils/misc_utils.js'
 
 import Stripe from 'stripe'

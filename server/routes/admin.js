@@ -38,12 +38,16 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
     try{
         const param = request.query
         const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const approvedBool = param["approved"] === "true"?true:false
+        const paymentBool = param["paymentPending"] === "false"?true:false
 
         const page = parseInt(param["p"] || 0)
         const limit = parseInt(param["l"] || 50)
 
         const query = {
-            ...(id && id.length > 0 ? {_id:{$in:id}} : {})
+            ...(id && id.length > 0 ? {_id:{$in:id}} : {}),
+            ...(param["approved"]?{"customerStatus.profileApproved":approvedBool}:{}),
+            ...(param["paymentPending"]?{"pendingPayments.creation":paymentBool}:{})
         }
         
         let customers = await Customer.find(query).skip(page*limit).limit(limit).exec();
@@ -142,6 +146,7 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
         const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const approvedBool = param["approved"] === "true"?true:false
         const paymentBool = param["paymentPending"] === "true"?true:false
+        // console.log(approvedBool, paymentBool)
 
         const query = {
             ...(id && id.length > 0 ? {customer:{$in:id}} : {}),
@@ -149,12 +154,12 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
             paymentPending:paymentBool
             // updateApproved:param["approved"]?approvedBool:undefined
         }
-
+        console.log(query)
         const updates = await CustomerUpdate.find(query).populate("customer").populate("user").lean().exec()
         const returnArr = []
         for(const update of updates){
             if(!update.customer) continue
-            console.log("update", update)
+            // console.log("update", update)
             // const updatedFields = {
             //     "basicInfo":[],
             //     "personalityInfo":[],
@@ -190,7 +195,7 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
 
         reply.send({
             data: returnArr,
-            message: `Unapproved updates found successfully`,
+            message: `${approvedBool?'':'Un'}approved ${paymentBool?'Un':''}paid updates found successfully`,
             event_code: 1,
             status_code: 200
         })
@@ -306,7 +311,9 @@ fastify.put(BASE_URL+"/admin/reject-update", async (request, reply) => {
             // const update = await CustomerUpdate.findById(customer.customerUpdate._id)
             // update.updateApproved = false
             // delete customer._doc.customerUpdate
+            const update = await CustomerUpdate.findByIdAndDelete(customer.customerUpdate._id)
             customer.customerUpdate = undefined
+            delete customer._doc.customerUpdate
             customer.pendingPayments.update = false
             customer.pendingPayments.updateNum = 0
             customer.pendingPayments.photo = false
@@ -328,6 +335,34 @@ fastify.put(BASE_URL+"/admin/reject-update", async (request, reply) => {
     }
     catch(err){
         console.error(err)
+        reply.code(500).send({
+            data:null,
+            message:err.message,
+            status_code:500,
+            event_code:0
+        })
+    }
+})
+
+fastify.put(BASE_URL+"/admin/deactivate-customer", async (request, reply) => {
+    try{
+        const param = request.query
+        const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const query = {
+            ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+        }
+        
+        const customers = await Customer.updateMany(query, {
+            "customerStatus.status":"inactive"
+        }, {new:true}).lean().exec()
+        reply.send({
+            data: customers,
+            message: `Customers deactivated successfully`,
+            event_code: 1,
+            status_code: 200
+        })
+    }
+    catch(err){
         reply.code(500).send({
             data:null,
             message:err.message,
