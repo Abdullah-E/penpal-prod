@@ -1,5 +1,7 @@
 import User from "../models/user.js"
 
+import { products_cache } from "../models/product.js"
+
 export const flagFavorites = async (user, customers) => {
 
     const {favorite:favoriteList} = await user.populate("favorite")
@@ -65,6 +67,27 @@ export const flagCreatedBy = async (customers) => {
                 customer.createdBy = user
             }
             console.log(customer.createdBy, customer.basicInfo.firstName)
+            return customer
+        })
+    )
+    return updatedCustomers
+}
+
+export const paidByCreation = async (customers) => {
+    const creationId = products_cache.find(product=>product.name === "creation")._id
+    // console.log(customers, creationId)
+    const updatedCustomers = await Promise.all(
+        customers.map(async customer=>{
+            console.log(Object.keys(customer))
+            const creationPurchase = customer.completedPurchases.find(
+                purchase=>
+                    purchase.products.some(product=>product.product.equals(creationId))
+            )
+            if(creationPurchase){
+                const user = await User.findById(creationPurchase.user)
+                console.log("yoo", user)
+                customer.paidBy = user
+            }
             return customer
         })
     )
