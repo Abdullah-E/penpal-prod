@@ -136,7 +136,8 @@ const STATUS_TYPES = [
     "unapproved",
     "active",
     "expired",
-    "inactive"
+    "inactive",
+    "new"
 ]
 
 const customerSchema = new mongoose.Schema({

@@ -488,3 +488,37 @@ fastify.delete(BASE_URL + '/customer', async(request, reply)=>{
         });
     }
 })
+
+fastify.get(BASE_URL + '/customer/updates-rem', async(request, reply)=>{
+    try{
+        const customers = await Customer.find().exec();
+        for(let customer of customers){
+            if(customer.customerUpdate){
+                delete customer._doc.customerUpdate
+            }
+            customer.pendingPayments.update = false
+            customer.pendingPayments.updateNum = 0
+            customer.pendingPayments.basicInfo = {}
+            customer.pendingPayments.personalityInfo = {}
+            customer.pendingPayments.photo = false
+            customer.pendingPayments.totalPaidPhotos = 0
+            customer.pendingPayments.wordLimit = 0
+            customer = await updatePendingPayments(customer)
+            await customer.save()
+        }
+        return reply.send({
+            data:customers,
+            message:"Customer updates removed",
+            event_code:1,
+            status_code:200
+        })
+    }catch(error){
+        console.error(error)
+        return reply.send({
+            message:"Customer updates not removed",
+            event_code:0,
+            status_code:400,
+            data:null
+        })
+    }
+})

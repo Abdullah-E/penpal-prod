@@ -12,6 +12,11 @@ import { extendDateByMonth } from '../utils/misc_utils.js'
 
 import Stripe from 'stripe'
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
+stripe.paymentMethodDomains.create({
+    domain_name: 'app.awayoutpenpals.com'
+}).then((domain) => {
+    console.log(`domain ${domain.domain_name} registered`)
+})
 
 fastify.addHook('onRequest', async (request, reply) => {
     // const isExcludedRoute = request.routeOptions.url.includes('webhook')
