@@ -155,6 +155,9 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
             paymentPending:paymentBool
             // updateApproved:param["approved"]?approvedBool:undefined
         }
+
+        let paidBy = param["id"] && id.length === 1
+        
         console.log(query)
         const updates = await CustomerUpdate.find(query).populate("customer").populate("user").lean().exec()
         const returnArr = []
@@ -184,6 +187,8 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
                 ...update.customer.photos,
                 ...(update.newBody.photos && Object.keys(update.newBody.photos).length > 0 ? update.newBody.photos : {})
             }
+
+            update.customer.updatedBy = update.user
 
             returnArr.push({
                 ...update.customer,
