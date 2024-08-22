@@ -6,7 +6,7 @@ import Notification from "../models/notification.js";
 import Customer, {updatePendingPayments} from "../models/customer.js"
 
 import { getUserFromToken } from "../utils/firebase_utils.js"
-import { applyCustomerUpdate } from "../utils/db_utils.js"
+import { applyCustomerUpdate} from "../utils/db_utils.js"
 import { extendDateByMonth } from "../utils/misc_utils.js";
 
 // import { frontendUrl } from "../index.js";
@@ -189,6 +189,10 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
             }
 
             update.customer.updatedBy = update.user
+            if(update.paidBy){
+                update.customer.paidBy = await User.findOne({_id:update.paidBy}).lean().exec()
+
+            }
 
             returnArr.push({
                 ...update.customer,

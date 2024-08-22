@@ -20,5 +20,11 @@ body = {
     "creation":true,
     "update":true,
     "renewal":true,
+    "updateNum":1,
+    "basicInfo":{
+        "age":true
+    }
+    "wordLimit":0,
+    "totalPaidPhotos":0,
     "cid":"66a42f2fdc44be2392ea19b9"
 }

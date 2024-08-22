@@ -94,23 +94,19 @@ export const paidByCreation = async (customers) => {
     return updatedCustomers
 }
 
-export const paidByUpdate = async (customers) => {
-    const updateId = products_cache.find(product=>product.name === "update")._id
-    const updatedCustomers = await Promise.all(
-        customers.map(async customer=>{
-            const updatePurchase = customer.completedPurchases.find(
-                purchase=>
-                    purchase.products.some(product=>product.product.equals(updateId))
-            )
-            if(updatePurchase){
-                const user = await User.findById(updatePurchase.user)
-                customer.paidBy = user
-            }
-            return customer
-        })
-    )
-    return updatedCustomers
-}
+// export const paidByUpdate = async (customer) => {
+//     const updateId = products_cache.find(product=>product.name === "update")._id
+    
+//     const updatePurchase = customer.completedPurchases.find(
+//         purchase=>
+//             purchase.products.some(product=>product.product.equals(updateId))
+//     )
+//     if(updatePurchase){
+//         const user = await User.findById(updatePurchase.user)
+//         customer.paidBy = user
+//     }
+//     return customer
+// }
 
 export function calculateCompatibility(userPersonality, customerPersonality) {
     const fields = ["hobbies", "sports", "likes", "personality", "bookGenres", "musicGenres", "movieGenres"];

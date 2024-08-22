@@ -190,6 +190,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
                 const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
                 if(update){
                     update.paymentPending = false
+                    update.paidBy = purchase.user
                     await update.save()
 
                 }
