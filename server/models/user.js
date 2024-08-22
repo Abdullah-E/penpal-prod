@@ -125,6 +125,10 @@ const userSchema = new mongoose.Schema({
     notifications:{
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'Notification'
+    },
+    completedPurchases:{
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'Purchase'
     }
 })
 
