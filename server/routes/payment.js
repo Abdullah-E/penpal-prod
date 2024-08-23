@@ -108,7 +108,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         const session = await stripe.checkout.sessions.create({
             ui_mode:'embedded',
             mode: 'payment',
-            payment_method_types: ['card'],
+            payment_method_types: ['card', 'paypal'],
             line_items: line_items,
             return_url: `${base_url}/payment/result?session_id={CHECKOUT_SESSION_ID}`,
         })
