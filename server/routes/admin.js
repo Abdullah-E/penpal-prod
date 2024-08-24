@@ -282,7 +282,7 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
                     readAt: null,
                     type: "customerUpdate",
                     message: `${customer.basicInfo.firstName} from your favorite list has been updated!`,
-                    link: `${process.env.FRONTEND_URL}/customer/${customer._id}`,
+                    link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
                     customer: customer._id,
                     user: user._id
                 })

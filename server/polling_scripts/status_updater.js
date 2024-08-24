@@ -114,5 +114,6 @@ const updateExpires = async () => {
     }
 }
 
-const intervalMs = 24*60*60*1000
+// const intervalMs = 24*60*60*1000
+const intervalMs = 5*1000
 setInterval(updateExpires, intervalMs)

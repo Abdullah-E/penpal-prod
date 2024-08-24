@@ -13,23 +13,9 @@ const transporter = nodemailer.createTransport({
 
 export default transporter
 
-export const sendMail = async (mailOptions) => {
-    try{
-        const info = await transporter.sendMail(mailOptions)
-        console.log("Message sent: %s", info.response)
-        return info
-    }
-    catch(err){
-        console.error(err)
-        return null
-    }
-}
-
 const test_mail_options = {
     from: process.env.GMAIL_EMAIL,
     to: 'bully.ae@gmail.com',
     subject: 'Test email',
     text: 'This is a test email'
 }
-
-sendMail(test_mail_options)
