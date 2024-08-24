@@ -112,9 +112,11 @@ export function calculateCompatibility(userPersonality, customerPersonality) {
     const fields = ["hobbies", "sports", "likes", "personality", "bookGenres", "musicGenres", "movieGenres"];
     let totalMatches = 0;
     let totalFields = fields.length;
-
+    // console.log(userPersonality, customerPersonality)
     fields.forEach(field => {
-        if (userPersonality[field].length && customerPersonality[field].length) {
+        if (userPersonality[field] 
+            && customerPersonality[field]
+        ) {
             const intersection = userPersonality[field].filter(value => customerPersonality[field].includes(value));
             if (intersection.length) {
                 totalMatches++;
@@ -123,7 +125,6 @@ export function calculateCompatibility(userPersonality, customerPersonality) {
     });
     return (totalMatches / totalFields) * 100;
 }
-
 
 export const findInsertionIndex = (array, score)=> {
     let low = 0;

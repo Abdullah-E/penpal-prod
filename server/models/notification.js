@@ -52,5 +52,11 @@ const notificationSchema = new mongoose.Schema({
     }
 }, {timestamps: true})
 
+
+//send email
+notificationSchema.pre('save', function(next){
+
+})
+
 const Notification = mongoose.model('Notification', notificationSchema)
 export default Notification
