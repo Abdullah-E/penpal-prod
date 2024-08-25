@@ -9,7 +9,6 @@ import CustomerUpdate from '../models/customerUpdate.js'
 import { verifyToken } from '../utils/firebase_utils.js'
 // import {applyCustomerUpdate} from '../utils/db_utils.js'
 import { extendDateByMonth } from '../utils/misc_utils.js'
-import { extendDateByMonth } from '../utils/misc_utils.js'
 
 import Stripe from 'stripe'
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
@@ -127,7 +126,8 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         return reply.send({
             data:{
                 clientSecret: session.client_secret,
-                status:session.status
+                status:session.status,
+                sessionId: request.query["sendId"] && request.query["sendId"] === "true"? session.id: null
             },
             message: 'Session created',
             status_code: 200,

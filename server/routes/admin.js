@@ -7,7 +7,7 @@ import Customer, {updatePendingPayments} from "../models/customer.js"
 
 import { getUserFromToken } from "../utils/firebase_utils.js"
 import { applyCustomerUpdate} from "../utils/db_utils.js"
-import { extendDateByMonth } from "../utils/misc_utils.js";
+import { extendDateByMonth, isEmpty } from "../utils/misc_utils.js";
 
 // import { frontendUrl } from "../index.js";
 
@@ -40,18 +40,24 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
         const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const approvedBool = param["approved"] === "true"?true:false
         const paymentBool = param["paymentPending"] === "false"?false:true
-
-        const page = parseInt(param["p"] || 0)
-        const limit = parseInt(param["l"] || 50)
-
+        const paginate = param["p"] && param["l"]
+        
         const query = {
             ...(id && id.length > 0 ? {_id:{$in:id}} : {}),
             ...(param["approved"]?{"customerStatus.profileApproved":approvedBool}:{}),
             ...(param["paymentPending"]?{"pendingPayments.creation":paymentBool}:{})
         }
         console.log(query)
-        
-        let customers = await Customer.find(query).skip(page*limit).limit(limit).exec();
+        let customers = []
+        if(paginate){
+
+            const page = parseInt(param["p"] || 0)
+            const limit = parseInt(param["l"] || 50)
+            customers = await Customer.find(query).skip(page*limit).limit(limit).exec();
+        }
+        else{
+            customers = await Customer.find(query).exec()
+        }
         
         reply.send({
             data: customers,
@@ -114,16 +120,23 @@ fastify.put(BASE_URL+"/admin/approve-customer", async (request, reply) => {
         const query = {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
         }
-        
+        if(isEmpty(query)){
+            return reply.code(400).send({
+                data:null,
+                message:"No ids provided",
+                status_code:400,
+                event_code:0
+            })
+        }
         const customers = await Customer.updateMany(query, {
             "customerStatus.profileApproved":true, 
             createdAt:Date.now(), 
-            "customerStatus.expiresAt":extendDateByMonth(Date.now(), 12),
+            "customerStatus.expiresAt":extendDateByMonth(new Date(), 12),
             "customerStatus.newlyListed":true,
             "customerStatus.tag":"New Profile",
             "customerStatus.status":"active"
         }, {new:true}).lean().exec()
-        reply.send({
+        return reply.send({
             data: customers,
             message: `Customers approved successfully`,
             event_code: 1,
@@ -131,7 +144,8 @@ fastify.put(BASE_URL+"/admin/approve-customer", async (request, reply) => {
         })
     }
     catch(err){
-        reply.code(500).send({
+        console.error(err)
+        return reply.code(500).send({
             data:null,
             message:err.message,
             status_code:500,
