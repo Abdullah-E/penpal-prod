@@ -7,7 +7,7 @@ import Customer, {customerDefaultValues, updatePendingPayments} from "../models/
 
 import { getUserFromToken } from "../utils/firebase_utils.js"
 import { applyCustomerUpdate} from "../utils/db_utils.js"
-import { extendDateByMonth, isEmpty, isEmpty, parseCustomerInfo} from "../utils/misc_utils.js";
+import { extendDateByMonth, isEmpty, parseCustomerInfo} from "../utils/misc_utils.js";
 
 // import { frontendUrl } from "../index.js";
 
