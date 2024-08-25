@@ -387,7 +387,7 @@ if __name__ == "__main__":
         }
     ]
     
-    test_suite = Customer_Test(20, user_credentials)
+    test_suite = Customer_Test(50, user_credentials)
     test_suite.populate_tokens()
     test_suite.post_random_customers()
     test_suite.get_all_customers()

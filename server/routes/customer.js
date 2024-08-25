@@ -8,6 +8,7 @@ import Favorite from "../models/favorite.js";
 
 import {verifyToken } from "../utils/firebase_utils.js";
 import { flagFavorites, flagRatings, flagCreated, flagUpdated, queryFromOptions, flagCreatedBy, paidByCreation} from "../utils/db_utils.js";
+import { parseCustomerInfo } from "../utils/misc_utils.js";
 
 fastify.addHook('onRequest', async(request, reply)=>{
     const isExcludedRoute = 
@@ -23,31 +24,6 @@ fastify.addHook('onRequest', async(request, reply)=>{
         await verifyToken(request, reply);
     }
 })
-
-const parseCustomerInfo = (body) => {
-    
-    const fields = body["basicInfo"]?Object.keys(body["basicInfo"]):[]
-    const customer = {
-        basicInfo:{}
-        // personalityInfo:{},
-    }
-    fields.forEach(field => {
-        if(field === "spokenLanguages"){
-            // console.log("skipping", field)
-            customer["basicInfo"][field] = body["basicInfo"][field]
-            return
-        }
-        customer["basicInfo"][field] = Array.isArray(body["basicInfo"][field]) ? body["basicInfo"][field][0] : body["basicInfo"][field]
-        customer["basicInfo"][field] = customer["basicInfo"][field] === undefined || 
-        customer["basicInfo"][field] === "" ? 
-            (customerDefaultValues["basicInfo"][field]?customerDefaultValues["basicInfo"][field]:"" ): customer["basicInfo"][field]
-    })
-    
-    customer["personalityInfo"] = body["personalityInfo"]?body["personalityInfo"]:customerDefaultValues["personalityInfo"]
-    customer["photos"] = body["photos"]?body["photos"]:customerDefaultValues["photos"]
-    return customer
-
-}
 
 fastify.post(BASE_URL + '/customer', async(request, reply)=>{
     try{

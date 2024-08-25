@@ -3,11 +3,11 @@ import { fastify, BASE_URL } from "./init.js";
 import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdate.js"
 import Notification from "../models/notification.js";
-import Customer, {updatePendingPayments} from "../models/customer.js"
+import Customer, {customerDefaultValues, updatePendingPayments} from "../models/customer.js"
 
 import { getUserFromToken } from "../utils/firebase_utils.js"
 import { applyCustomerUpdate} from "../utils/db_utils.js"
-import { extendDateByMonth, isEmpty } from "../utils/misc_utils.js";
+import { extendDateByMonth, isEmpty, parseCustomerInfo} from "../utils/misc_utils.js";
 
 // import { frontendUrl } from "../index.js";
 
@@ -78,9 +78,14 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
 
 fastify.put(BASE_URL+"/admin/customer", async (request, reply) => {
     try{
-        const update = {}
-        update.newBody = request.body
+        const update = {
+            basicInfo:{},
+            personalityInfo:{},
+            photos:{},
+            ...request.body
 
+        }
+        
         const param = request.query
         const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const query = {
@@ -90,12 +95,29 @@ fastify.put(BASE_URL+"/admin/customer", async (request, reply) => {
         // const customers = await Customer.updateMany(query, {
         //     ...param
         // }, {new:true}).lean().exec()
-        
+        if(update["basicInfo"]){
+            for(const field in update["basicInfo"]){
+                if(field === "spokenLanguages"){
+                    continue
+                }
+                if(Array.isArray(update["basicInfo"][field])){
+                    update["basicInfo"][field] = update["basicInfo"][field][0]
+                }
+            }
+        }
+    
         const customersToUpdate = await Customer.find(query).exec()
         for (let customer of customersToUpdate){
-            const newCustomer = await applyCustomerUpdate(customer, update)
-            await newCustomer.save()
+            customer["basicInfo"] = { ...customer["basicInfo"], ...update["basicInfo"] }
+            customer["personalityInfo"] = { ...customer["personalityInfo"], ...update["personalityInfo"] }
+            customer["photos"] = { ...customer["photos"], ...update["photos"] }
+            await customer.save()
         }
+
+        // for (let customer of customersToUpdate){
+        //     const newCustomer = await applyCustomerUpdate(customer, update)
+        //     await newCustomer.save()
+        // }
         reply.send({
             data: customersToUpdate,
             message: `Customers updated successfully`,
@@ -104,6 +126,7 @@ fastify.put(BASE_URL+"/admin/customer", async (request, reply) => {
         })
     }
     catch(err){
+        console.error(err)
         reply.code(500).send({
             data:null,
             message:err.message,
