@@ -126,7 +126,8 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         return reply.send({
             data:{
                 clientSecret: session.client_secret,
-                status:session.status
+                status:session.status,
+                sessionId: request.query["sendId"] && request.query["sendId"] === "true"? session.id: null
             },
             message: 'Session created',
             status_code: 200,

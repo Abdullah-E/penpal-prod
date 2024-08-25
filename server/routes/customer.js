@@ -533,3 +533,27 @@ fastify.get(BASE_URL + '/customer/updates-rem', async(request, reply)=>{
         })
     }
 })
+
+fastify.get(BASE_URL + '/customer/wipe-and-clean', async(request, reply)=>{
+    try{
+        const users = await User.find().populate("favorite").exec()
+        for(let user of users){
+            user.createdCustomers = []
+            user.favorite = undefined
+            user.compatibleCustomers = []
+            user.ratings = []
+            user.customerUpdates = []
+            user.completedPurchases = []
+            user.notifications = []
+            await user.save()
+        }
+        return reply.send({
+            data:users,
+            message:"Users wiped",
+            event_code:1,
+            status_code:200
+        })
+    }catch(error){
+        console.error(error)
+    }
+})
