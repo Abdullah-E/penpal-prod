@@ -7,7 +7,7 @@ import CustomerUpdate from "../models/customerUpdate.js";
 import Favorite from "../models/favorite.js";
 
 import {verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings, flagCreated, flagUpdated, queryFromOptions } from "../utils/db_utils.js";
+import { flagFavorites, flagRatings, flagCreated, flagUpdated, queryFromOptions, flagCreatedBy, paidByCreation} from "../utils/db_utils.js";
 
 fastify.addHook('onRequest', async(request, reply)=>{
     const isExcludedRoute = 
@@ -124,6 +124,8 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             "customerStatus.status":'active',
             ...queryFromOptions(options)
         }
+        let paidBy = false
+
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
         if(param["id"] && ids.length === 1){
             if(request.user && request.user.role === "user"){
@@ -136,6 +138,7 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
                 }
             }else{
                 console.log("admin")
+                paidBy = true
                 query = {_id:ids[0]}
             }
         }
@@ -147,6 +150,7 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
                 "basicInfo":1, "personalityInfo":1, "photos":1, "imageId":1,
                 "rating":1, "numRatings":1, 
                 "customerStatus":1, "customerUpdate":1, "pendingPayments":1, "createdAt":1,
+                "completedPurchases":1,
 
                 "weight":{
                     $cond:[
@@ -161,6 +165,7 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
                 }
             }},
             {$lookup:{from:"customerupdates", localField:"customerUpdate", foreignField:"_id", as:"customerUpdate"}},
+            {$lookup:{from:"purchases", localField:"completedPurchases", foreignField:"_id", as:"completedPurchases"}},
             {$sort:{"weight":-1,[sort_on]:-1}},
             {$skip:page*limit},
             {$limit:parseInt(limit)},
@@ -172,9 +177,14 @@ fastify.get(BASE_URL + '/customer', async(request, reply)=>{
             customers = await flagRatings(user, customers)
             customers = await flagCreated(user, customers)
             customers = flagUpdated(customers)
-            // console.log(customers)
+            customers = await flagCreatedBy(customers)
+            console.log(customers)
         }
         
+        if(paidBy){
+            customers = await flagCreatedBy(customers)
+            customers = await paidByCreation(customers)
+        }
         
         return reply.code(200).send({
             data:customers,
@@ -197,7 +207,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
     try{
         const params = request.query
         const id = params["id"]
-        const overwrite = params["overwrite"] || false
+        const overwrite = params["overwrite"] && params["overwrite"] === "true"?true:false
         // const {id} = request.query
         const userToUpdate = await User.findOne({firebaseUid:request.user.uid}).exec()
 
@@ -234,7 +244,8 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         customerToUpdate.pendingPayments.wordLimit += request.body.wordLimit
 
         let directUpdate = true
-        if(newUpdate.newBody.basicInfo){
+        console.log(newUpdate.newBody)
+        if(Object.keys(newUpdate.newBody.basicInfo).length > 0){
             const updatedFields = Object.keys(newUpdate.newBody.basicInfo)
             //map to object of bools
             customerToUpdate.pendingPayments.basicInfo = updatedFields.reduce((acc, field)=>{
@@ -248,7 +259,7 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
             console.log("huh")
             directUpdate = false
         }
-        if(newUpdate.newBody.personalityInfo){
+        if(Object.keys(newUpdate.newBody.personalityInfo).length > 0){
             const updatedFields = Object.keys(newUpdate.newBody.personalityInfo)
             customerToUpdate.pendingPayments.personalityInfo = updatedFields.reduce((acc, field)=>{
                 acc[field] = true
@@ -484,5 +495,41 @@ fastify.delete(BASE_URL + '/customer', async(request, reply)=>{
             status_code:400,
             data:null
         });
+    }
+})
+
+fastify.get(BASE_URL + '/customer/updates-rem', async(request, reply)=>{
+    try{
+        const customers = await Customer.find().exec();
+        for(let customer of customers){
+            if(customer.customerUpdate){
+                console.log("removing update", customer.basicInfo.firstName)
+                customer.customerUpdate = undefined
+                // delete customer._doc.customerUpdate
+            }
+            customer.pendingPayments.update = false
+            customer.pendingPayments.updateNum = 0
+            customer.pendingPayments.basicInfo = {}
+            customer.pendingPayments.personalityInfo = {}
+            customer.pendingPayments.photo = false
+            customer.pendingPayments.totalPaidPhotos = 0
+            customer.pendingPayments.wordLimit = 0
+            customer = await updatePendingPayments(customer)
+            await customer.save()
+        }
+        return reply.send({
+            data:customers,
+            message:"Customer updates removed",
+            event_code:1,
+            status_code:200
+        })
+    }catch(error){
+        console.error(error)
+        return reply.send({
+            message:"Customer updates not removed",
+            event_code:0,
+            status_code:400,
+            data:null
+        })
     }
 })

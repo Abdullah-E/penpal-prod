@@ -7,12 +7,17 @@ import Customer, {updatePendingPayments} from '../models/customer.js'
 import CustomerUpdate from '../models/customerUpdate.js'
 
 import { verifyToken } from '../utils/firebase_utils.js'
-import {applyCustomerUpdate} from '../utils/db_utils.js'
+// import {applyCustomerUpdate} from '../utils/db_utils.js'
 import { extendDateByMonth } from '../utils/misc_utils.js'
 import { extendDateByMonth } from '../utils/misc_utils.js'
 
 import Stripe from 'stripe'
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
+stripe.paymentMethodDomains.create({
+    domain_name: 'app.awayoutpenpals.com'
+}).then((domain) => {
+    console.log(`domain ${domain.domain_name} registered`)
+})
 
 fastify.addHook('onRequest', async (request, reply) => {
     // const isExcludedRoute = request.routeOptions.url.includes('webhook')
@@ -171,7 +176,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             // purchase.status = session.status
             if(prodName === 'creation'){
                 customer.pendingPayments.creation = false
-                // customer.customerStatus.status = 'active'
+                customer.customerStatus.status = 'unapproved'
                 // customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
             }
             else if(prodName === 'renewal'){
@@ -186,6 +191,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
                 const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
                 if(update){
                     update.paymentPending = false
+                    update.paidBy = purchase.user
                     await update.save()
 
                 }
@@ -217,7 +223,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
 
             await purchase.save()
         }
-
+        customer.completedPurchases.push(purchase._id)
         customer = await updatePendingPayments(customer)
         customer.markModified('customerStatus')
         customer.markModified('pendingPayments')

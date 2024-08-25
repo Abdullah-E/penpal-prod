@@ -22,6 +22,7 @@
     "firebase": "^10.12.3",
     "firebase-admin": "^12.2.0",
     "mongoose": "^8.4.4",
+    "nodemailer": "^6.9.14",
     "stripe": "^16.4.0"
   }
 }

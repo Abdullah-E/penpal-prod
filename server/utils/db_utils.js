@@ -1,3 +1,7 @@
+import User from "../models/user.js"
+
+import { products_cache } from "../models/product.js"
+
 export const flagFavorites = async (user, customers) => {
 
     const {favorite:favoriteList} = await user.populate("favorite")
@@ -53,13 +57,66 @@ export const flagUpdated = (customers) => {
     return customers
 }
 
+export const flagCreatedBy = async (customers) => {
+    const updatedCustomers = await Promise.all(
+        customers.map( async customer=>{
+        
+            const user = await User.findOne({"createdCustomers":customer._id})
+            if(user){
+                console.log(user._id)
+                customer.createdBy = user
+            }
+            console.log(customer.createdBy, customer.basicInfo.firstName)
+            return customer
+        })
+    )
+    return updatedCustomers
+}
+
+export const paidByCreation = async (customers) => {
+    const creationId = products_cache.find(product=>product.name === "creation")._id
+    // console.log(customers, creationId)
+    const updatedCustomers = await Promise.all(
+        customers.map(async customer=>{
+            console.log(Object.keys(customer))
+            const creationPurchase = customer.completedPurchases.find(
+                purchase=>
+                    purchase.products.some(product=>product.product.equals(creationId))
+            )
+            if(creationPurchase){
+                const user = await User.findById(creationPurchase.user)
+                console.log("yoo", user)
+                customer.paidBy = user
+            }
+            return customer
+        })
+    )
+    return updatedCustomers
+}
+
+// export const paidByUpdate = async (customer) => {
+//     const updateId = products_cache.find(product=>product.name === "update")._id
+    
+//     const updatePurchase = customer.completedPurchases.find(
+//         purchase=>
+//             purchase.products.some(product=>product.product.equals(updateId))
+//     )
+//     if(updatePurchase){
+//         const user = await User.findById(updatePurchase.user)
+//         customer.paidBy = user
+//     }
+//     return customer
+// }
+
 export function calculateCompatibility(userPersonality, customerPersonality) {
     const fields = ["hobbies", "sports", "likes", "personality", "bookGenres", "musicGenres", "movieGenres"];
     let totalMatches = 0;
     let totalFields = fields.length;
-
+    // console.log(userPersonality, customerPersonality)
     fields.forEach(field => {
-        if (userPersonality[field].length && customerPersonality[field].length) {
+        if (userPersonality[field] 
+            && customerPersonality[field]
+        ) {
             const intersection = userPersonality[field].filter(value => customerPersonality[field].includes(value));
             if (intersection.length) {
                 totalMatches++;
@@ -68,7 +125,6 @@ export function calculateCompatibility(userPersonality, customerPersonality) {
     });
     return (totalMatches / totalFields) * 100;
 }
-
 
 export const findInsertionIndex = (array, score)=> {
     let low = 0;

@@ -35,6 +35,7 @@ export default Product
 export const products_cache = await Product.find({}).exec()
 const update_products_cache = async () => {
     products_cache = await Product.find({}).exec()
+    return products_cache
 }
 productSchema.pre('save', async function(next) {
     console.log('updating products cache')

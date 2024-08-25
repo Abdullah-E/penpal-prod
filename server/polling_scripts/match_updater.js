@@ -31,8 +31,9 @@ const matchCustomers = async () => {
                 if(existingCustomer){
                     continue
                 }
+                console.log("Matching", user.firstName, customer.basicInfo.firstName)
                 cust_update = true
-                const score = calculateCompatibility(user.personality, customer.personality)
+                const score = calculateCompatibility(user.personalityInfo, customer.personalityInfo)
                 const index = findInsertionIndex(user.compatibleCustomers, score)
                 console.log(index, score, customer._id)
                 user.compatibleCustomers.splice(index, 0, {customerId: customer._id, score})

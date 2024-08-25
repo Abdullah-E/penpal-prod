@@ -2,6 +2,7 @@ import "dotenv/config";
 import { mongo } from "./config/db.js";
 import { fastify, BASE_URL } from "./routes/init.js";
 
+
 fastify.get(BASE_URL, async () => {
   return { message: "Welcome to Penpal API" };
 });
@@ -48,3 +49,6 @@ fastify.listen(
 
 import "./polling_scripts/match_updater.js"
 import "./polling_scripts/tag_updater.js"
+import "./polling_scripts/status_updater.js"
+
+import "./config/mail.js"

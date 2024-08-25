@@ -132,9 +132,12 @@ const VETERAN_TYPES = [
 ]
 
 const STATUS_TYPES = [
-    "new",
+    "unpaid",
+    "unapproved",
     "active",
     "expired",
+    "inactive",
+    "new"
 ]
 
 const customerSchema = new mongoose.Schema({
@@ -374,7 +377,6 @@ const customerSchema = new mongoose.Schema({
         required: true,
         default: Date.now
     },
-    
     customerUpdate: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CustomerUpdates'
@@ -398,6 +400,11 @@ const customerSchema = new mongoose.Schema({
         lastMatched:{type: Date,required: false},
         expiresAt:{type: Date,required: false},
     },
+
+    completedPurchases:{
+        type:[mongoose.Schema.Types.ObjectId],
+        ref: 'Purchase',
+    }
 })
 
 export const customerDefaultValues = {
@@ -460,7 +467,7 @@ export const customerDefaultValues = {
         photoLimit: 3,
         premiumExpires: null,
         featuredExpires: null,
-        status: "new",
+        status: "unpaid",
         tag:"",
         lastMatched: null,
         lastUpdated: null,

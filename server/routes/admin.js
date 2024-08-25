@@ -1,12 +1,15 @@
 import { fastify, BASE_URL } from "./init.js";
 
-// import User from "../models/user.js";
-import Customer, {updatePendingPayments} from "../models/customer.js"
+import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdate.js"
+import Notification from "../models/notification.js";
+import Customer, {updatePendingPayments} from "../models/customer.js"
 
 import { getUserFromToken } from "../utils/firebase_utils.js"
-import { applyCustomerUpdate } from "../utils/db_utils.js"
+import { applyCustomerUpdate} from "../utils/db_utils.js"
 import { extendDateByMonth } from "../utils/misc_utils.js";
+
+// import { frontendUrl } from "../index.js";
 
 fastify.addHook("onRequest", async (request, reply) => {
     if (request.routeOptions.url && request.routeOptions.url.startsWith(BASE_URL+"/admin")){
@@ -35,18 +38,23 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
     try{
         const param = request.query
         const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const approvedBool = param["approved"] === "true"?true:false
+        const paymentBool = param["paymentPending"] === "false"?false:true
 
         const page = parseInt(param["p"] || 0)
         const limit = parseInt(param["l"] || 50)
 
         const query = {
-            ...(id && id.length > 0 ? {_id:{$in:id}} : {})
+            ...(id && id.length > 0 ? {_id:{$in:id}} : {}),
+            ...(param["approved"]?{"customerStatus.profileApproved":approvedBool}:{}),
+            ...(param["paymentPending"]?{"pendingPayments.creation":paymentBool}:{})
         }
+        console.log(query)
         
         let customers = await Customer.find(query).skip(page*limit).limit(limit).exec();
         
         reply.send({
-            data: customers.length === 1 ? customers[0] : customers,
+            data: customers,
             message: `Customer${customers.length === 1? "":"s"} found successfully`,
             event_code: 1,
             status_code: 200
@@ -139,6 +147,7 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
         const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
         const approvedBool = param["approved"] === "true"?true:false
         const paymentBool = param["paymentPending"] === "true"?true:false
+        // console.log(approvedBool, paymentBool)
 
         const query = {
             ...(id && id.length > 0 ? {customer:{$in:id}} : {}),
@@ -147,11 +156,14 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
             // updateApproved:param["approved"]?approvedBool:undefined
         }
 
+        let paidBy = param["id"] && id.length === 1
+        
+        console.log(query)
         const updates = await CustomerUpdate.find(query).populate("customer").populate("user").lean().exec()
         const returnArr = []
         for(const update of updates){
             if(!update.customer) continue
-            console.log("update", update)
+            // console.log("update", update)
             // const updatedFields = {
             //     "basicInfo":[],
             //     "personalityInfo":[],
@@ -176,6 +188,12 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
                 ...(update.newBody.photos && Object.keys(update.newBody.photos).length > 0 ? update.newBody.photos : {})
             }
 
+            update.customer.updatedBy = update.user
+            if(update.paidBy){
+                update.customer.paidBy = await User.findOne({_id:update.paidBy}).lean().exec()
+
+            }
+
             returnArr.push({
                 ...update.customer,
                 personalityInfo:newPersonalityInfo,
@@ -187,7 +205,7 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
 
         reply.send({
             data: returnArr,
-            message: `Unapproved updates found successfully`,
+            message: `${approvedBool?'':'Un'}approved ${paymentBool?'Un':''}paid updates found successfully`,
             event_code: 1,
             status_code: 200
         })
@@ -233,6 +251,45 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
             event_code: 1,
             status_code: 200
         })
+
+        // generate notifications
+        
+        for(const customer of customersToUpdate){
+            // const customerId = customer._id
+            const customerFavoriteUsers = await User.aggregate([
+                {
+                    $lookup:{
+                        from:"favorites",
+                        localField:"favorite",
+                        foreignField:"_id",
+                        as:"favoriteInfo"
+                    }
+                },
+                {$unwind:"$favoriteInfo"},
+                {
+                    $match:{
+                        "favoriteInfo.favorites":customer._id
+                    }
+                }
+            ])
+            if(customerFavoriteUsers.length === 0){
+                // console.log("No favorite users found for customer", customer._id)
+                continue
+            }
+            for(const user of customerFavoriteUsers){
+                const newNotification = new Notification({
+                    read: false,
+                    readAt: null,
+                    type: "customerUpdate",
+                    message: `${customer.basicInfo.firstName} from your favorite list has been updated!`,
+                    link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
+                    customer: customer._id,
+                    user: user._id
+                })
+                const createdNotification = await newNotification.save()
+                await User.updateOne({_id: user._id}, {$push: {notifications: createdNotification._id}})
+            }
+        }
     }
     catch(err){
         console.error(err)
@@ -264,7 +321,9 @@ fastify.put(BASE_URL+"/admin/reject-update", async (request, reply) => {
             // const update = await CustomerUpdate.findById(customer.customerUpdate._id)
             // update.updateApproved = false
             // delete customer._doc.customerUpdate
+            const update = await CustomerUpdate.findByIdAndDelete(customer.customerUpdate._id)
             customer.customerUpdate = undefined
+            delete customer._doc.customerUpdate
             customer.pendingPayments.update = false
             customer.pendingPayments.updateNum = 0
             customer.pendingPayments.photo = false
@@ -286,6 +345,40 @@ fastify.put(BASE_URL+"/admin/reject-update", async (request, reply) => {
     }
     catch(err){
         console.error(err)
+        reply.code(500).send({
+            data:null,
+            message:err.message,
+            status_code:500,
+            event_code:0
+        })
+    }
+})
+
+fastify.put(BASE_URL+"/admin/customer-status", async (request, reply) => {
+    try{
+        const param = request.query
+        const ids = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
+        const query = {
+            ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
+        }
+
+        const {status} = request.body
+        const customers = await Customer.updateMany(query, {
+            "customerStatus.status":status
+        }, {new:true}).lean().exec()
+
+        
+        // const customers = await Customer.updateMany(query, {
+        //     "customerStatus.status":"inactive"
+        // }, {new:true}).lean().exec()
+        reply.send({
+            data: customers,
+            message: `Customers deactivated successfully`,
+            event_code: 1,
+            status_code: 200
+        })
+    }
+    catch(err){
         reply.code(500).send({
             data:null,
             message:err.message,
