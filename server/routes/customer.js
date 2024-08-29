@@ -30,28 +30,15 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         
         //some fields in request.body can be arrays, need to get the first element from them:
         const fieldsFromRequest = parseCustomerInfo(request.body)
-        // console.log(fieldsFromRequest)
-        // const newCust = await Customer.create({...customerDefaultValues, ...fieldsFromRequest});
         let newCust = new Customer({...customerDefaultValues, ...fieldsFromRequest})
-        // newCust.photos.total = newCust.photos.artworks.length + 1
-        // const bioWordCount = newCust.basicInfo.bio.split(" ").length
-        // if(bioWordCount > newCust.customerStatus.bioWordLimit){
-        //     newCust.pendingPayments.wordLimit = Math.ceil(bioWordCount/350)>1?Math.ceil(bioWordCount/350)-1:0
-        // }
 
-        // if(request.body.wordLimit > 0){
-        newCust.pendingPayments.wordLimit = request.body.wordLimit
-        // }
-
+        newCust.pendingPayments.wordLimit = request.body.wordLimit || 0
+        
         if(request.body.totalPaidPhotos >0){
             newCust.pendingPayments.totalPaidPhotos = request.body.totalPaidPhotos
             newCust.pendingPayments.photo = true
         }
         
-        // if(newCust.photos.total > newCust.customerStatus.photoLimit){
-        //     newCust.pendingPayments.photo = true
-        //     newCust.pendingPayments.totalPaidPhotos = newCust.photos.total - newCust.customerStatus.photoLimit
-        // }
         newCust = await updatePendingPayments(newCust)
         await newCust.save()
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
