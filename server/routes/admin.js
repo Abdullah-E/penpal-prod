@@ -110,7 +110,19 @@ fastify.post(BASE_URL+"/admin/customer", async(request, reply)=>{
             }
         }
 
-        if(approved && paidCreation){
+        if(approved ){
+            //do payments:
+            newCustomer["pendingPayments"]["creation"] = false
+            newCustomer["customerStatus"]["status"] = 'unapproved'
+            if(request.body.wordLimit && request.body.wordLimit >0){
+                newCustomer.customerStatus.wordLimitExtended = true
+                newCustomer.customerStatus.bioWordLimit = request.body.wordLimit * 100
+            }
+            
+            if(request.body.totalPaidPhotos && request.body.totalPaidPhotos >0){
+                newCustomer.customerStatus.photoLimit = request.body.totalPaidPhotos
+            }
+            //approve:
             newCustomer["customerStatus"]["profileApproved"] = true
             newCustomer["customerStatus"]["expiresAt"] = extendDateByMonth(new Date(), 12)
             newCustomer["customerStatus"]["newlyListed"] = true
