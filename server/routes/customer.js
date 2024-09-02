@@ -174,7 +174,6 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
                 paymentPending:true,
             })
             customerToUpdate.customerUpdate = newUpdate._id
-            customerToUpdate.pendingPayments.update = true
         }
 
         if(!userToUpdate.customerUpdates.includes(newUpdate._id)){
@@ -199,7 +198,13 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
                 return acc
             }, {})
             const noPaymentFields = ["mailingAddress", "institutionalEmailProvider"]
-            directUpdate = updatedFields.every(field => noPaymentFields.includes(field))
+            directUpdate = updatedFields.every((field) => {
+                if(noPaymentFields.includes(field)){
+                    fieldsCount -=1
+                    customerToUpdate.pendingPayments.basicInfo[field] = undefined
+                    return true
+                }
+            })
             fieldsCount += updatedFields.length
 
             console.log(directUpdate)
@@ -233,6 +238,10 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         console.log("direct update", directUpdate)
         if(directUpdate){
             newUpdate.paymentPending = false
+            customerToUpdate.pendingPayments.update = false
+        }else{
+            newUpdate.paymentPending = true
+            customerToUpdate.pendingPayments.update = true
         }
 
         await newUpdate.save()
