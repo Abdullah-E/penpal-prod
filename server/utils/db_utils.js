@@ -1,6 +1,9 @@
 import User from "../models/user.js"
 
 import { products_cache } from "../models/product.js"
+import Customer, { customerDefaultValues, updatePendingPayments} from "../models/customer.js"
+
+import { parseCustomerInfo } from "./misc_utils.js"
 
 export const flagFavorites = async (user, customers) => {
 
@@ -212,3 +215,135 @@ export const queryFromOptions = (options) => {
     })
     return query
 }
+
+export const createCustomer = async (reqBody,  options={},fbUser=undefined, mongoUser=undefined) => {
+    /*
+    body:
+    {
+        basicInfo"{
+           "firstName":String, can be array
+            "lastName":String, can be array
+            "inmateNumber":String, can be array
+            "mailingAddress":String, can be array
+            "city":String, can be array
+            "state":String, can be array
+            "zipcode":String, can be array
+            "bio":"String, can be array
+            "gender":String, can be array
+            "orientation":String, can be array
+            "race":String, can be array
+            "education":String, can be array
+            "age":String, can be array
+            "dateOfBirth": Date, can be array
+            "height":String, can be array
+            "weight":String, can be array
+            "hairColor":String, can be array
+            "eyeColor":String, can be array
+            "religiousPref":String, can be array
+            "bodyType":String, can be array
+            "astrologicalSign":String, can be array
+            "relationshipStatus":String, can be array
+            "veteranStatus":String, can be array
+            "institutionalEmailProvider":String, can be array
+            "hometown":String, can be array
+            "spokenLanguages":Array
+            "highSchool":String, can be array
+            "highSchoolCity":String, can be array
+            "highSchoolState":String, can be array
+            "college":String, can be array
+            "collegeCity":String, can be array
+            "collegeState":String, can be array
+        }
+        PersonalityInfo:{
+            "hobbies":Array,
+            "sports":Array,
+            "likes":Array,
+            "personality":Array,
+            "bookGenres":Array,
+            "musicGenres":Array,
+            "movieGenres":Array
+        }
+        photos:{
+            imageUrl:String,
+            artworks:Array
+        }
+        specialInstructions:String
+        wordLimit:Number
+        totalPaidPhotos:Number
+    }
+    */
+
+    //filling basicInfo:
+    let customerObj = parseCustomerInfo(reqBody)    
+    customerObj = {
+        basicInfo:{...customerDefaultValues["basicInfo"]}, 
+        personalityInfo:{...customerDefaultValues["personalityInfo"]},
+        photos:{...customerDefaultValues["photos"]},
+        customerStatus:{...customerDefaultValues["customerStatus"]},
+        pendingPayments:{...customerDefaultValues["pendingPayments"]},
+        ...customerObj,
+    }
+    //special instructions:
+    
+    if(options["specialInstructions"]){
+        customerObj["customerStatus"]["specialInstructionsText"] = reqBody["specialInstructions"]
+        customerObj["customerStatus"]["specialInstructionsFlag"] = true
+    }
+    
+    if(options["paidCreation"]){
+        customerObj["pendingPayments"]["creation"] = false;
+        customerObj["customerStatus"]["status"] = 'unapproved';
+        if(reqBody["totalPaidPhotos"] && reqBody["totalPaidPhotos"] >0){
+            customerObj["customerStatus"]["photoLimit"]=reqBody["totalPaidPhotos"];
+        }
+        if(reqBody["wordLimit"] && reqBody["wordLimit"] >0){
+            customerObj["customerStatus"]["wordLimitExtended"] = true;
+            customerObj["customerStatus"]["wordLimit"]=reqBody["wordLimit"]*100;
+        }
+    }else{
+        customerObj["pendingPayments"]["wordLimit"] = reqBody["wordLimit"] && reqBody["wordLimit"] >0?
+        reqBody["wordLimit"]:
+        customerDefaultValues["pendingPayments"]["wordLimit"];
+        
+        if(reqBody["totalPaidPhotos"] && reqBody["totalPaidPhotos"] >0){
+            customerObj["pendingPayments"]["totalPaidPhotos"] = reqBody["totalPaidPhotos"];
+            customerObj["pendingPayments"]["photo"] = true;
+        }
+        customerObj = updatePendingPayments(customerObj)
+    }
+    
+    if(options["approved"]){
+        customerObj["pendingPayments"]["creation"] = false;
+        customerObj["customerStatus"]["status"] = 'unapproved';
+        if(reqBody["totalPaidPhotos"] && reqBody["totalPaidPhotos"] >0){
+            customerObj["customerStatus"]["photoLimit"]=reqBody["totalPaidPhotos"];
+        }
+        if(reqBody["wordLimit"] && reqBody["wordLimit"] >0){
+            customerObj["customerStatus"]["wordLimitExtended"] = true;
+            customerObj["customerStatus"]["wordLimit"]=reqBody["wordLimit"]*100;
+        }
+        customerObj["customerStatus"]["profileApproved"] = true
+        customerObj["customerStatus"]["expiresAt"] = extendDateByMonth(new Date(), 12)
+        customerObj["customerStatus"]["newlyListed"] = true
+        customerObj["customerStatus"]["tag"] = "New Profile"
+        customerObj["customerStatus"]["status"] = "active"
+    }
+    
+    const newCustomer = new Customer(customerObj)
+    console.log(newCustomer)
+    await newCustomer.save()
+    if(mongoUser || fbUser){
+        const user = mongoUser?mongoUser:await User.findOne({firebaseUid:fbUser.uid})
+        if(!user.createdCustomers){
+            user.createdCustomers = [newCustomer._id]
+        }else{
+            user.createdCustomers.push(newCustomer._id)
+        }
+        await user.save()
+    }
+    return newCustomer
+}
+
+// const updateCustomer = async (reqBody, options={}, fbUser=undefined, mongoUser=undefined) => {
+    
+// }

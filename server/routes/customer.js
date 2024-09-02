@@ -7,7 +7,7 @@ import CustomerUpdate from "../models/customerUpdate.js";
 import Favorite from "../models/favorite.js";
 
 import {verifyToken } from "../utils/firebase_utils.js";
-import { flagFavorites, flagRatings, flagCreated, flagUpdated, queryFromOptions, flagCreatedBy, paidByCreation} from "../utils/db_utils.js";
+import {createCustomer, flagFavorites, flagRatings, flagCreated, flagUpdated, queryFromOptions, flagCreatedBy, paidByCreation} from "../utils/db_utils.js";
 import { parseCustomerInfo } from "../utils/misc_utils.js";
 
 fastify.addHook('onRequest', async(request, reply)=>{
@@ -27,28 +27,11 @@ fastify.addHook('onRequest', async(request, reply)=>{
 
 fastify.post(BASE_URL + '/customer', async(request, reply)=>{
     try{
-        
-        //some fields in request.body can be arrays, need to get the first element from them:
-        const fieldsFromRequest = parseCustomerInfo(request.body)
-        let newCust = new Customer({...customerDefaultValues, ...fieldsFromRequest})
 
-        newCust.pendingPayments.wordLimit = request.body.wordLimit || 0
-        
-        if(request.body.totalPaidPhotos >0){
-            newCust.pendingPayments.totalPaidPhotos = request.body.totalPaidPhotos
-            newCust.pendingPayments.photo = true
+        const options = {
+            "specialInstructions":true
         }
-        
-        newCust = await updatePendingPayments(newCust)
-        await newCust.save()
-        const user = await User.findOne({firebaseUid:request.user.uid}).exec()
-        if(!user.createdCustomers){
-            user.createdCustomers = [newCust._id]
-        }else{
-            user.createdCustomers.push(newCust._id)
-        }
-        await user.save()
-        // await User.findOneAndUpdate({firebaseUid:request.user.uid}, user).exec()
+        const newCust = await createCustomer(request.body, options, request.user)
         return reply.code(201).send({
             data:newCust,
             message:"Customer created successfully",

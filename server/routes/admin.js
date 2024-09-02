@@ -6,7 +6,7 @@ import Notification from "../models/notification.js";
 import Customer, {customerDefaultValues, updatePendingPayments} from "../models/customer.js"
 
 import { getUserFromToken } from "../utils/firebase_utils.js"
-import { applyCustomerUpdate} from "../utils/db_utils.js"
+import { applyCustomerUpdate, createCustomer} from "../utils/db_utils.js"
 import { extendDateByMonth, isEmpty, parseCustomerInfo} from "../utils/misc_utils.js";
 
 // import { frontendUrl } from "../index.js";
@@ -78,62 +78,66 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
 
 fastify.post(BASE_URL+"/admin/customer", async(request, reply)=>{
     try{
+        // for(const field in request.body["basicInfo"]){
+            //     if(field === "spokenLanguages"){
+        //         continue
+        //     }
+        //     console.log(field, request.body["basicInfo"][field])
+        //     if(Array.isArray(request.body["basicInfo"][field])){
+        //         request.body["basicInfo"][field] = request.body["basicInfo"][field][0]
+        //     }
+        // }
         
-        for(const field in request.body["basicInfo"]){
-            if(field === "spokenLanguages"){
-                continue
-            }
-            console.log(field, request.body["basicInfo"][field])
-            if(Array.isArray(request.body["basicInfo"][field])){
-                request.body["basicInfo"][field] = request.body["basicInfo"][field][0]
-            }
-        }
-        
-        const newCustomer = new Customer({
-            ...customerDefaultValues,
-            ...request.body
-        })
+        // const newCustomer = new Customer({
+            //     ...customerDefaultValues,
+            //     ...request.body
+            // })
         const params = request.query
         const paidCreation = params["pay"] && params["pay"] === "true" ? true : false
         const approved = params["approve"] && params["approve"] === "true" ? true : false
-
-        if(paidCreation){
-            newCustomer["pendingPayments"]["creation"] = false
-            newCustomer["customerStatus"]["status"] = 'unapproved'
-            if(request.body.wordLimit && request.body.wordLimit >0){
-                newCustomer.customerStatus.wordLimitExtended = true
-                newCustomer.customerStatus.bioWordLimit = request.body.wordLimit * 100
-            }
+        const newCustomer = await createCustomer(request.body, {
+            paidCreation,
+            approved,
+            // request.user
+        })
+        // console.log(newCustomer)
+        // if(paidCreation){
+        //     newCustomer["pendingPayments"]["creation"] = false
+        //     newCustomer["customerStatus"]["status"] = 'unapproved'
+        //     if(request.body.wordLimit && request.body.wordLimit >0){
+        //         newCustomer.customerStatus.wordLimitExtended = true
+        //         newCustomer.customerStatus.bioWordLimit = request.body.wordLimit * 100
+        //     }
             
-            if(request.body.totalPaidPhotos && request.body.totalPaidPhotos >0){
-                newCustomer.customerStatus.photoLimit = request.body.totalPaidPhotos
-            }
-        }
+        //     if(request.body.totalPaidPhotos && request.body.totalPaidPhotos >0){
+        //         newCustomer.customerStatus.photoLimit = request.body.totalPaidPhotos
+        //     }
+        // }
 
-        if(approved ){
-            //do payments:
-            newCustomer["pendingPayments"]["creation"] = false
-            newCustomer["customerStatus"]["status"] = 'unapproved'
-            if(request.body.wordLimit && request.body.wordLimit >0){
-                newCustomer.customerStatus.wordLimitExtended = true
-                newCustomer.customerStatus.bioWordLimit = request.body.wordLimit * 100
-            }
+        // if(approved ){
+        //     //do payments:
+        //     newCustomer["pendingPayments"]["creation"] = false
+        //     newCustomer["customerStatus"]["status"] = 'unapproved'
+        //     if(request.body.wordLimit && request.body.wordLimit >0){
+        //         newCustomer.customerStatus.wordLimitExtended = true
+        //         newCustomer.customerStatus.bioWordLimit = request.body.wordLimit * 100
+        //     }
             
-            if(request.body.totalPaidPhotos && request.body.totalPaidPhotos >0){
-                newCustomer.customerStatus.photoLimit = request.body.totalPaidPhotos
-            }
-            //approve:
-            newCustomer["customerStatus"]["profileApproved"] = true
-            newCustomer["customerStatus"]["expiresAt"] = extendDateByMonth(new Date(), 12)
-            newCustomer["customerStatus"]["newlyListed"] = true
-            newCustomer["customerStatus"]["tag"] = "New Profile"
-            newCustomer["customerStatus"]["status"] = "active"
-        }
+        //     if(request.body.totalPaidPhotos && request.body.totalPaidPhotos >0){
+        //         newCustomer.customerStatus.photoLimit = request.body.totalPaidPhotos
+        //     }
+        //     //approve:
+        //     newCustomer["customerStatus"]["profileApproved"] = true
+        //     newCustomer["customerStatus"]["expiresAt"] = extendDateByMonth(new Date(), 12)
+        //     newCustomer["customerStatus"]["newlyListed"] = true
+        //     newCustomer["customerStatus"]["tag"] = "New Profile"
+        //     newCustomer["customerStatus"]["status"] = "active"
+        // }
 
 
-        const savedCustomer = await newCustomer.save()
+        // const savedCustomer = await newCustomer.save()
         reply.send({
-            data: savedCustomer,
+            data: newCustomer,
             message: `Customer created successfully`,
             event_code: 1,
             status_code: 200

@@ -36,13 +36,17 @@ export const parseCustomerInfo = (body) => {
             customer["basicInfo"][field] = body["basicInfo"][field]
             return
         }
-        customer["basicInfo"][field] = Array.isArray(body["basicInfo"][field]) ? body["basicInfo"][field][0] : body["basicInfo"][field]
-        customer["basicInfo"][field] = customer["basicInfo"][field] === undefined || 
-        customer["basicInfo"][field] === "" ? 
-            (customerDefaultValues["basicInfo"][field]?customerDefaultValues["basicInfo"][field]:"" ): customer["basicInfo"][field]
+        customer["basicInfo"][field] = Array.isArray(body["basicInfo"][field]) ? 
+        body["basicInfo"][field][0] : 
+        body["basicInfo"][field];
+        // customer["basicInfo"][field] = customer["basicInfo"][field] === undefined || 
+        // customer["basicInfo"][field] === "" ? 
+        //     (customerDefaultValues["basicInfo"][field]?customerDefaultValues["basicInfo"][field]:"" ): customer["basicInfo"][field]
     })
     
-    customer["personalityInfo"] = body["personalityInfo"]?body["personalityInfo"]:customerDefaultValues["personalityInfo"]
+    customer["personalityInfo"] = body["personalityInfo"]?
+    body["personalityInfo"]:
+    customerDefaultValues["personalityInfo"]
     customer["photos"] = body["photos"]?body["photos"]:customerDefaultValues["photos"]
     return customer
 

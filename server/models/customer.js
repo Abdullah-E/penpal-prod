@@ -399,6 +399,8 @@ const customerSchema = new mongoose.Schema({
         featuredExpires:{type: Date,required: false},
         lastMatched:{type: Date,required: false},
         expiresAt:{type: Date,required: false},
+        specialInstructionsFlag:{type:Boolean,required:false,default:false},
+        specialInstructionsText:{type:String,required:false,default:""}
     },
 
     completedPurchases:{
@@ -471,17 +473,19 @@ export const customerDefaultValues = {
         tag:"",
         lastMatched: null,
         lastUpdated: null,
-        expiresAt: null
+        expiresAt: null,
+        specialInstructionsFlag: false,
     },
     personalityInfo: {},
     rating: null,
     ratingReal: null,
     numRatings: 0,
-    photos:{
-        imageUrl: "",
-        artworks: [],
-        total: 0
-    },
+    // photos:{
+    //     imageUrl: "",
+    //     artworks: [],
+    //     total: 0
+    // },
+    photos:{},
     imageId: "",
     createdAt: Date.now(),
 }
