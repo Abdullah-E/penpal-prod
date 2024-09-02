@@ -3,7 +3,7 @@ import User from "../models/user.js"
 import { products_cache } from "../models/product.js"
 import Customer, { customerDefaultValues, updatePendingPayments} from "../models/customer.js"
 
-import { parseCustomerInfo } from "./misc_utils.js"
+import { parseCustomerInfo, extendDateByMonth } from "./misc_utils.js"
 
 export const flagFavorites = async (user, customers) => {
 
