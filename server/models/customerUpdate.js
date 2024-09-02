@@ -34,7 +34,16 @@ const customerUpdateSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: false
-    }
+    },
+    specialInstructionsFlag:{
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    specialInstructionsText:{
+        type: String,
+        required: false,
+    },
 })
 
 const CustomerUpdate = mongoose.model('CustomerUpdates', customerUpdateSchema)

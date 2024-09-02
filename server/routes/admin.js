@@ -78,20 +78,7 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
 
 fastify.post(BASE_URL+"/admin/customer", async(request, reply)=>{
     try{
-        // for(const field in request.body["basicInfo"]){
-            //     if(field === "spokenLanguages"){
-        //         continue
-        //     }
-        //     console.log(field, request.body["basicInfo"][field])
-        //     if(Array.isArray(request.body["basicInfo"][field])){
-        //         request.body["basicInfo"][field] = request.body["basicInfo"][field][0]
-        //     }
-        // }
-        
-        // const newCustomer = new Customer({
-            //     ...customerDefaultValues,
-            //     ...request.body
-            // })
+
         const params = request.query
         const paidCreation = params["pay"] && params["pay"] === "false" ? false : true
         const approved = params["approve"] && params["approve"] === "false" ? false : true
@@ -308,6 +295,10 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
             if(update.paidBy){
                 update.customer.paidBy = await User.findOne({_id:update.paidBy}).lean().exec()
 
+            }
+            if(update.specialInstructionsFlag){
+                update.customer.updateInstructionsFlag = true
+                update.customer.updateInstructionsText = update.specialInstructionsText
             }
 
             returnArr.push({

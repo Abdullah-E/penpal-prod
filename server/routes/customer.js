@@ -225,6 +225,11 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         customerToUpdate.pendingPayments.updateNum  = fieldsCount
         customerToUpdate = updatePendingPayments(customerToUpdate)
 
+        if(request.body.specialInstructions){
+            newUpdate.specialInstructionsFlag = true
+            newUpdate.specialInstructionsText = request.body.specialInstructions
+        }
+
         console.log("direct update", directUpdate)
         if(directUpdate){
             newUpdate.paymentPending = false
