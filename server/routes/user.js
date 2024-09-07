@@ -368,7 +368,7 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
               ]}
           ]
         }}},
-        {$sort:{weight:-1}},
+        {$sort:{weight:-1, _id:1}},
         {$skip:page*limit},
         {$limit:parseInt(limit)}
       ]).exec()
