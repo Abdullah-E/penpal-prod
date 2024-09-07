@@ -726,26 +726,26 @@ fastify.get(BASE_URL + "/user/history-payments", async (request, reply) => {
 fastify.post(BASE_URL + "/user/login", async (request, reply) => {
   const { email, password } = request.body;
   try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      reply.status(404).send({
-        data: null,
-        event_code: 0,
-        message: "Email not found",
-        status_code: 404,
-      });
-      return;
-    }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      reply.status(401).send({
-        data: null,
-        event_code: 0,
-        message: "Password incorrect",
-        status_code: 401,
-      });
-      return;
-    }
+    // const user = await User.findOne({ email });
+    // if (!user) {
+    //   reply.status(404).send({
+    //     data: null,
+    //     event_code: 0,
+    //     message: "Email not found",
+    //     status_code: 404,
+    //   });
+    //   return;
+    // }
+    // const isMatch = await bcrypt.compare(password, user.password);
+    // if (!isMatch) {
+    //   reply.status(401).send({
+    //     data: null,
+    //     event_code: 0,
+    //     message: "Password incorrect",
+    //     status_code: 401,
+    //   });
+    //   return;
+    // }
     const fb_user = await signInWithEmailAndPassword(auth, email, password);
     console.log(fb_user.user.emailVerified);
     const token = await fb_user.user.getIdToken();
