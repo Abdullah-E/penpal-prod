@@ -189,7 +189,7 @@ const optionsMap = {
         "customerStatus.newlyListed":true
     },
     "veteran":{
-        "basicInfo.veteranStatus":{$not:{$in:["", "Never Served"]}}
+        "basicInfo.veteranStatus":{$not:{$in:["", "Never served"]}}
     },
     "male":{
         "basicInfo.gender":{$in:["Male", "Transgender Females to Male"]}
