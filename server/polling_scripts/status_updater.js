@@ -114,6 +114,35 @@ const updateExpires = async () => {
     }
 }
 
+const updateRecents = async () => {
+    console.log("Updating profile status")
+    const newCustomers = await Customer.find({"customerStatus.newlyListed": true})
+    for(const customer of newCustomers){
+        // const status = customer.customerStatus
+        //find if profile is older than 5 days
+        if(customer.createdAt < new Date(new Date() - 5*24*60*60*1000)){
+            console.log("Profile is older than 24 hours", customer.basicInfo.firstName)
+            customer.customerStatus.newlyListed = false
+            await customer.save()
+            
+        }
+    }
+
+    const updatedCustomers = await Customer.find({"customerStatus.recentlyUpdated": true})
+    for(const customer of updatedCustomers){
+        const status = customer.customerStatus
+        //find if update is older than 5 days
+        if(status.lastUpdated < new Date(new Date() - 5*24*60*60*1000)){
+            console.log("Profile update is older than 24 hours", customer.basicInfo.firstName)
+            customer.customerStatus.recentlyUpdated = false
+            await customer.save()
+            
+        }
+    }
+    
+}
+
 const intervalMs = 24*60*60*1000
 // const intervalMs = 5*1000
 setInterval(updateExpires, intervalMs)
+setInterval(updateRecents, intervalMs)
