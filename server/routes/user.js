@@ -385,7 +385,9 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     }
 
     const test_list = await User.findOne({firebaseUid:request.user.uid}).populate("compatibleCustomers.customerId").lean().exec()
-    const customerList = test_list.compatibleCustomers.map(cust => {return cust.customerId}).slice(page*limit, (page*limit)+limit)
+    let customerList = test_list.compatibleCustomers.map(cust => {return cust.customerId}).slice(page*limit, (page*limit)+limit)
+    customerList = Array.from(customerList).filter(customer => customer !== null)
+
     let matches = await flagFavorites(user, customerList)
     matches = await flagRatings(user, matches)
     //sort matches by ratings

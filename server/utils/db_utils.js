@@ -8,7 +8,6 @@ import { parseCustomerInfo, extendDateByMonth } from "./misc_utils.js"
 export const flagFavorites = async (user, customers) => {
 
     const {favorite:favoriteList} = await user.populate("favorite")
-    // console.log(favoriteList)
     // console.log(favoriteList, user)
     if(!favoriteList){
         customers.map(customer=>{
