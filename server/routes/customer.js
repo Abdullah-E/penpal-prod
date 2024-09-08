@@ -185,6 +185,30 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         newUpdate.user = userToUpdate._id
         newUpdate.newBody = parseCustomerInfo(request.body)
 
+        //photos check:
+        if(newUpdate.newBody.photos){
+            let photosChanged = true
+            if(newUpdate.newBody.photos.imageUrl == customerToUpdate.photos.imageUrl){
+                newUpdate.newBody.photos = undefined
+                photosChanged = false
+            }
+            //check if artworks array changed:
+            if(newUpdate.newBody.photos.artworks){
+                if(newUpdate.newBody.photos.artworks.length === customerToUpdate.photos.artworks.length){
+                    const sameArtworks = newUpdate.newBody.photos.artworks.every((artwork, index)=>{
+                        return artwork === customerToUpdate.photos.artworks[index]
+                    })
+                    if(sameArtworks){
+                        newUpdate.newBody.photos.artworks = undefined
+                        photosChanged = false
+                    }
+                }
+            }
+            if(!photosChanged){
+                newUpdate.newBody.photos = undefined
+            }
+        }
+
         let fieldsCount = 0
         customerToUpdate.pendingPayments.wordLimit += request.body.wordLimit
 
