@@ -64,6 +64,10 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
                 customer.specialInstructionsFlag = true
                 customer.specialInstructionsText = customer.customerStatus.specialInstructionsText
             }
+            else{
+                customer.specialInstructionsFlag = false
+                customer.specialInstructionsText = ""
+            }
             return customer
         })
         
@@ -305,8 +309,12 @@ fastify.get(BASE_URL+"/admin/update", async (request, reply) => {
 
             }
             if(update.specialInstructionsFlag){
-                update.customer.updateInstructionsFlag = true
-                update.customer.updateInstructionsText = update.specialInstructionsText
+                update.customer.specialInstructionsFlag = true
+                update.customer.specialInstructionsText = update.specialInstructionsText
+            }
+            else{
+                update.customer.specialInstructionsFlag = false
+                update.customer.specialInstructionsText = ""
             }
 
             returnArr.push({
