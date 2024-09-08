@@ -53,11 +53,19 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
 
             const page = parseInt(param["p"] || 0)
             const limit = parseInt(param["l"] || 50)
-            customers = await Customer.find(query).skip(page*limit).limit(limit).exec();
+            customers = await Customer.find(query).skip(page*limit).limit(limit).lean().exec();
         }
         else{
-            customers = await Customer.find(query).exec()
+            customers = await Customer.find(query).lean().exec()
         }
+        customers.map(customer => {
+            if(customer.customerStatus.specialInstructionsFlag){
+                console.log("specialInstructionsFlag", customer.basicInfo.firstName)
+                customer.specialInstructionsFlag = true
+                customer.specialInstructionsText = customer.customerStatus.specialInstructionsText
+            }
+            return customer
+        })
         
         reply.send({
             data: customers,
