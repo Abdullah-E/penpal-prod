@@ -184,12 +184,11 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
         newUpdate.customer = id
         newUpdate.user = userToUpdate._id
         newUpdate.newBody = parseCustomerInfo(request.body)
-
         //photos check:
         if(newUpdate.newBody.photos){
             let photosChanged = true
             if(newUpdate.newBody.photos.imageUrl == customerToUpdate.photos.imageUrl){
-                newUpdate.newBody.photos = undefined
+                newUpdate.newBody.photos.imageUrl = undefined
                 photosChanged = false
             }
             //check if artworks array changed:
