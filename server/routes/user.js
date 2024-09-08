@@ -343,7 +343,8 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     return;
   }
   try {
-    const {p:page, l:limit} = request.query;
+    let {p:page, l:limit} = request.query;
+    limit = parseInt(limit) || 10
     const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
     if (user.profileComplete == false) {
       // let matches = await Customer.find({
@@ -370,7 +371,7 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
         }}},
         {$sort:{weight:-1, _id:1}},
         {$skip:page*limit},
-        {$limit:parseInt(limit)}
+        {$limit:limit}
       ]).exec()
       matches = await flagFavorites(user, matches)
       matches = await flagRatings(user, matches)
@@ -384,10 +385,7 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     }
 
     const test_list = await User.findOne({firebaseUid:request.user.uid}).populate("compatibleCustomers.customerId").lean().exec()
-    const customerList = test_list.compatibleCustomers.map(cust => cust.customerId).slice(page*limit, page*limit+limit)
-    //firstnames of customers:
-    console.log(customerList.map(cust => cust.basicInfo.firstName))
-
+    const customerList = test_list.compatibleCustomers.map(cust => {return cust.customerId}).slice(page*limit, (page*limit)+limit)
     let matches = await flagFavorites(user, customerList)
     matches = await flagRatings(user, matches)
     //sort matches by ratings
