@@ -490,6 +490,7 @@ export const customerDefaultValues = {
     createdAt: Date.now(),
 }
 
+export const nonPaidFields = ["mailingAddress", "institutionalEmailProvider"]
 
 export const updatePendingPayments = function(cust) {
     // console.log('updating pending payments', products_cache);

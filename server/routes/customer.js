@@ -1,7 +1,7 @@
 import { fastify, BASE_URL } from "./init.js";
 import mongoose from "mongoose";
 
-import Customer, {customerDefaultValues, updatePendingPayments, DeletedCustomer} from "../models/customer.js";
+import Customer, {customerDefaultValues, updatePendingPayments, DeletedCustomer, nonPaidFields} from "../models/customer.js";
 import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdate.js";
 import Favorite from "../models/favorite.js";
@@ -220,9 +220,9 @@ fastify.put(BASE_URL + '/customer', async(request, reply)=>{
                 acc[field] = true
                 return acc
             }, {})
-            const noPaymentFields = ["mailingAddress", "institutionalEmailProvider"]
+            // const noPaymentFields = ["mailingAddress", "institutionalEmailProvider"]
             directUpdate = updatedFields.every((field) => {
-                if(noPaymentFields.includes(field)){
+                if(nonPaidFields.includes(field)){
                     fieldsCount -=1
                     customerToUpdate.pendingPayments.basicInfo[field] = undefined
                     return true
