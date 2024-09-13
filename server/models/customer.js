@@ -528,9 +528,11 @@ export const updatePendingPayments = function(cust) {
         if (product) cust.pendingPayments.totalAmount += product.price * cust.pendingPayments.wordLimit;
     }
     if(cust.pendingPayments.photo){
-        const product = products_cache.find(p => p.name === 'photo');
-        const photoPrice = cust.pendingPayments.totalPaidPhotos * product.price;
-        if (product) cust.pendingPayments.totalAmount += photoPrice;
+        const product = products_cache.find(p => p.name === 'totalPaidPhotos');
+        if (product) {
+            const photoPrice = cust.pendingPayments.totalPaidPhotos * product.price;
+            cust.pendingPayments.totalAmount += photoPrice;
+        }
     }
     //totalAMount to 2 decimal:
     cust.pendingPayments.totalAmount = cust.pendingPayments.totalAmount.toFixed(2);
