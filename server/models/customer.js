@@ -274,7 +274,17 @@ const customerSchema = new mongoose.Schema({
             default:""
         
         },
-        hometown:{
+        // hometown:{
+        //     type:String,
+        //     required:false,
+        //     default:""
+        // },
+        homeTownCity:{
+            type:String,
+            required:false,
+            default:""
+        },
+        homeTownState:{
             type:String,
             required:false,
             default:""
@@ -436,7 +446,9 @@ export const customerDefaultValues = {
         relationshipStatus: "",
         veteranStatus: "",
         institutionalEmailProvider: "",
-        hometown: "",
+        // hometown: "",
+        homeTownCity: "",
+        homeTownState: "",
         spokenLanguages: [],
         highSchool: "",
         highSchoolCity: "",
