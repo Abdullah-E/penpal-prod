@@ -6,7 +6,7 @@ import Product from '../models/product.js'
 import Customer, {updatePendingPayments} from '../models/customer.js'
 import CustomerUpdate from '../models/customerUpdate.js'
 
-import {productsListFromDB, stripeLineItemsAndPrice, createPaypalOrder, paypalLineItemsAndPrice, paypalAccessToken} from '../utils/payment_utils.js'
+import {productsListFromDB, stripeLineItemsAndPrice, createPaypalOrder, filterCart} from '../utils/payment_utils.js'
 import { verifyToken } from '../utils/firebase_utils.js'
 // import {applyCustomerUpdate} from '../utils/db_utils.js'
 import { extendDateByMonth } from '../utils/misc_utils.js'
@@ -34,18 +34,19 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
     try{
 
         // const {cid, wordLimit, totalPaidPhotos,  basicInfo, personalityInfo, featuredPlacement, premiumPlacement} = request.body
-        const {cid, ...cart} = request.body
+        let {cid, ...cart} = request.body
         const provider = request.query.provider || 'stripe'
         const base_url = request.body.url || 'https://app.awayoutpenpals.com'
-
+        // cart = filterCart(cart)
+        console.log('cart', cart)
         const {productsFromDB, updateNum} = await productsListFromDB(cart)
         cart.updateNum = updateNum
-        console.log(productsFromDB)
+        console.log('cart updateNum', cart.updateNum)
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
 
         if(provider === 'stripe'){
             const {line_items, totalAmount, productsList} = stripeLineItemsAndPrice(productsFromDB, cart);
-            console.log(line_items, totalAmount, productsList)
+            // console.log(line_items, totalAmount, productsList)
             if(line_items.length === 0){
                 return reply.status(400).send({
                     message: 'No products found',
@@ -83,8 +84,8 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             })
         }else if (provider === 'paypal'){
             console.log('Paypal provider')
-            const order = await createPaypalOrder(cart)
-            console.log(order)
+            const order = await createPaypalOrder(productsFromDB,cart)
+            // console.log(order)
             return reply.send({
                 data:{
                     order

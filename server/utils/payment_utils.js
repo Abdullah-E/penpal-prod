@@ -36,11 +36,13 @@ export const paypalLineItemsAndPrice = (db_prods, cart) => {
     let totalAmount = 0
     const paypalItems = db_prods.map(product => {
         let quantity = 1
+        console.log('Product', product.name)
         if(product.name === 'wordLimit'){
             quantity = cart.wordLimit
         }
         else if(product.name === 'update'){
             quantity = cart.updateNum
+            console.log('Update Quantity', quantity)
         }
         else if (product.name === 'totalPaidPhotos'){
             quantity = cart.totalPaidPhotos
@@ -70,14 +72,14 @@ export const paypalLineItemsAndPrice = (db_prods, cart) => {
     return {paypalItems, totalAmount, productsList}
 }
 
-export const createPaypalOrder = async (cart) => {
+export const createPaypalOrder = async (db_prods, cart) => {
     try{
         const accessToken = await paypalAccessToken()
         const url = `${paypalBase}/v2/checkout/orders`
-        const {productsFromDB, updateNum} = await productsListFromDB(cart)
-        cart.updateNum = updateNum
-        const {paypalItems, totalAmount, productsList} = paypalLineItemsAndPrice(productsFromDB, cart);
-
+        // const {productsFromDB, updateNum} = await productsListFromDB(cart)
+        // cart.updateNum = updateNum
+        const {paypalItems, totalAmount, productsList} = paypalLineItemsAndPrice(db_prods, cart);
+        console.log('Paypal Items', paypalItems)
         const payload = {
             intent: "CAPTURE",
             purchase_units: [
@@ -130,6 +132,43 @@ export const capturePaypalOrder = async (orderId) => {
     }
 }
 
+export const filterCart = (cart) => {
+    const filteredCart = {}
+    for(const [key, value] of Object.entries(cart)){
+        switch (typeof value) {
+            case typeof true:
+                // console.log(`Key: ${key}, Value: ${value}`)
+                if(value){
+                    filteredCart[key] = value
+                }
+                break;
+            case typeof 1:
+                if(value>0){
+                    filteredCart[key] = value
+                }
+                break;
+            case 'object':
+                console.log('Object', value)
+                const filteredFields = Object.keys(value)
+                .filter(product=>(!nonPaidFields.includes(product) && value[product] === true));
+                filteredCart[key] = {}
+                filteredFields.forEach(field=>{
+                    filteredCart[key][field] = value[field]
+                })
+
+                // if(filteredFields.length>0){
+                //     filteredCart[key] = {}
+                //     filteredFields.forEach(field=>{
+                //         filteredCart[key][field] = value[field]
+                //     })
+                // }
+                break; 
+            default:
+        }
+    }
+    return filteredCart
+}
+
 export const productsListFromDB = async (cart) => {
     /*
     CART FORMAT FROM FRONTEND:
@@ -167,7 +206,7 @@ export const productsListFromDB = async (cart) => {
             case 'object':
                 const filteredFields = Object.keys(value)
                 .filter(product=>!nonPaidFields.includes(product));                
-                console.log('Filtered fields', filteredFields)
+                // console.log('Filtered fields', filteredFields)
                 updateNum += filteredFields.length;
                 break; 
             default:
