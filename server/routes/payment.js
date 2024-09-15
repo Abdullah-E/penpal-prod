@@ -1,12 +1,12 @@
 import {BASE_URL, fastify} from './init.js'
-import fetch from 'node-fetch';
 
 import User from '../models/user.js'
 import Purchase from '../models/purchase.js'
 import Product from '../models/product.js'
-import Customer, {updatePendingPayments, nonPaidFields} from '../models/customer.js'
+import Customer, {updatePendingPayments} from '../models/customer.js'
 import CustomerUpdate from '../models/customerUpdate.js'
 
+import {productsListFromDB, stripeLineItemsAndPrice, createPaypalOrder, paypalLineItemsAndPrice, paypalAccessToken} from '../utils/payment_utils.js'
 import { verifyToken } from '../utils/firebase_utils.js'
 // import {applyCustomerUpdate} from '../utils/db_utils.js'
 import { extendDateByMonth } from '../utils/misc_utils.js'
@@ -19,9 +19,6 @@ stripe.paymentMethodDomains.create({
     console.log(`domain ${domain.domain_name} registered`)
 })
 
-const paypalClientId = process.env.PAYPAL_CLIENT_ID
-const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET
-const port = process.env.PORT || 8000
 
 fastify.addHook('onRequest', async (request, reply) => {
     // const isExcludedRoute = request.routeOptions.url.includes('webhook')
@@ -33,140 +30,12 @@ fastify.addHook('onRequest', async (request, reply) => {
     }
 })
 
-const paypalAccessToken = async()=>{
-    const authHeader = Buffer.from(
-        `${paypalClientId}:${paypalClientSecret}`
-    ).toString("base64");
-
-    const request = await fetch(
-        "https://api-m.sandbox.paypal.com/v1/oauth2/token",
-        {
-            method:"POST",
-            headers:{
-                Authorization:`Basic ${authHeader}`
-            },
-            body:new URLSearchParams({
-                grant_type: "client_credentials",
-                response_type: "id_token",
-                intent: "sdk_init",
-            })
-        }
-    );
-    const respJson = await request.json();
-    return respJson.access_token
-}
-
-fastify.post(BASE_URL+'/payment/paypal-test', async (request, reply)=>{
-    try{
-        const {cart} = request.body
-        console.log(`cart info: ${cart}`)
-        return reply.send({
-            data:cart,
-            message:"Cart received",
-            status_code:200,
-            event_code:1
-        })
-    }
-    catch(err){
-        console.err(err);
-        return reply.send({
-            data:null,
-            message:err.message,
-            status_code:500,
-            event_code:0
-        })
-    }
-})
-
-const productsListFromDB = async (cart) => {
-    /*
-    CART FORMAT FROM FRONTEND:
-    {
-        basicInfo:{
-            fieldName:bool
-        },
-        personalityInfo:{
-            fieldName:bool
-        },
-        creation:bool,
-        renewal:bool,
-
-        featuredPlacement:int,
-        premiumPlacement:int,
-        wordLimit:int,
-        totalPaidPhotos:int
-    }
-    */
-    const boughtProductsSet = new Set()
-    let updateNum = 0
-    for(const [key, value] of Object.entries(cart)){
-        switch (typeof value) {
-            case typeof true:
-                if(value){
-                    boughtProductsSet.add(key)
-                }
-                break;
-            case typeof 1:
-                
-                if(value>0){
-                    boughtProductsSet.add(key)
-                }
-                break;
-            case 'object':
-                const filteredFields = Object.keys(value)
-                .filter(product=>!nonPaidFields.includes(product));                
-                console.log('Filtered fields', filteredFields)
-                updateNum += filteredFields.length;
-                break; 
-            default:
-                break;
-        }
-    }
-    if(updateNum>0){
-        boughtProductsSet.add('update')
-    }
-    const productsFromDB = await(Product.find({name:[...boughtProductsSet]})).exec()
-    return {productsFromDB, updateNum}
-}
-
-const stripeLineItemsAndPrice = (db_prods, cart) => {
-    const productsList = []
-    let totalAmount = 0
-    const line_items = db_prods.map(product => {
-        let quantity = 1
-        if(product.name === 'wordLimit'){
-            quantity = cart.wordLimit
-        }
-        else if(product.name === 'update'){
-            quantity = cart.updateNum
-        }
-        else if (product.name === 'totalPaidPhotos'){
-            quantity = cart.totalPaidPhotos
-        }
-        else if(product.name === 'featuredPlacement'){
-            quantity = cart.featuredPlacement
-        }
-        else if(product.name === 'premiumPlacement'){
-            quantity = cart.premiumPlacement
-        }
-        totalAmount += product.price * quantity
-        productsList.push({
-            product: product._id,
-            quantity: quantity,
-            price: product.price
-        })
-        return {
-            price: product.priceId,
-            quantity: quantity
-        }
-    })
-    return {line_items, totalAmount, productsList}
-}
 fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply) => {
     try{
 
         // const {cid, wordLimit, totalPaidPhotos,  basicInfo, personalityInfo, featuredPlacement, premiumPlacement} = request.body
         const {cid, ...cart} = request.body
+        const provider = request.query.provider || 'stripe'
         const base_url = request.body.url || 'https://app.awayoutpenpals.com'
 
         const {productsFromDB, updateNum} = await productsListFromDB(cart)
@@ -174,45 +43,58 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         console.log(productsFromDB)
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
 
-        const {line_items, totalAmount, productsList} = stripeLineItemsAndPrice(productsFromDB, cart);
-        console.log(line_items, totalAmount, productsList)
-        if(line_items.length === 0){
-            return reply.status(400).send({
-                message: 'No products found',
-                data: null,
-                status_code: 400,
-                event_code: 0
-            })
-        }
+        if(provider === 'stripe'){
+            const {line_items, totalAmount, productsList} = stripeLineItemsAndPrice(productsFromDB, cart);
+            console.log(line_items, totalAmount, productsList)
+            if(line_items.length === 0){
+                return reply.status(400).send({
+                    message: 'No products found',
+                    data: null,
+                    status_code: 400,
+                    event_code: 0
+                })
+            }
 
-        const session = await stripe.checkout.sessions.create({
-            ui_mode:'embedded',
-            mode: 'payment',
-            payment_method_types: ['card'],
-            line_items: line_items,
-            return_url: `${base_url}/payment/result?session_id={CHECKOUT_SESSION_ID}`,
-        })
-        
-        const newPurchase = new Purchase({
-            user: user._id,
-            products: productsList,
-            customer: cid,
-            sessionId: session.id,
-            totalPrice: totalAmount,
-            status: 'open',
-        })
-        await newPurchase.save()
+            const session = await stripe.checkout.sessions.create({
+                ui_mode:'embedded',
+                mode: 'payment',
+                payment_method_types: ['card'],
+                line_items: line_items,
+                return_url: `${base_url}/payment/result?session_id={CHECKOUT_SESSION_ID}`,
+            })
+            const newPurchase = new Purchase({
+                user: user._id,
+                products: productsList,
+                customer: cid,
+                sessionId: session.id,
+                totalPrice: totalAmount,
+                status: 'open',
+            })
+            await newPurchase.save()
+            return reply.send({
+                data:{
+                    clientSecret: session.client_secret,
+                    status:session.status,
+                    sessionId: request.query["sendId"] && request.query["sendId"] === "true"? session.id: null
+                },
+                message: 'Session created',
+                status_code: 200,
+                event_code:1
+            })
+        }else if (provider === 'paypal'){
+            console.log('Paypal provider')
+            const order = await createPaypalOrder(cart)
+            console.log(order)
+            return reply.send({
+                data:{
+                    order
+                },
+                message: 'Order created',
+                status_code: 200,
+                event_code:1
+            });
+        }
     
-        return reply.send({
-            data:{
-                clientSecret: session.client_secret,
-                status:session.status,
-                sessionId: request.query["sendId"] && request.query["sendId"] === "true"? session.id: null
-            },
-            message: 'Session created',
-            status_code: 200,
-            event_code:1
-        })
     }catch(err){
         console.error(err)
         return reply.status(500).send({
@@ -222,6 +104,11 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             event_code: 0
         })
     }
+
+})
+
+
+fastify.post(BASE_URL+'/payment/capture-paypal-order', async (request, reply) => {
 
 })
 
