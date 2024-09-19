@@ -22,7 +22,7 @@ fastify.addHook("onRequest", async (request, reply) => {
                 status_code: 403,
                 event_code:0
             })
-        }else if(fb_user.role !== "user"){
+        }else if(fb_user.role !== "admin"){
             return reply.code(403).send({
                 data:null,
                 message: "Unauthorized - Not an admin",
@@ -515,7 +515,7 @@ fastify.put(BASE_URL+"/admin/customer-status", async (request, reply) => {
 fastify.get(BASE_URL + "/admin/payment-histories", async (request, reply) => {
     try {
       // Get page and limit from query parameters, with default values for both
-      const { page = 1, limit = 10 } = request.query;
+      const { page = 1, limit = 10, customer } = request.query;
   
       // Convert page and limit to integers, in case they are passed as strings
       const pageNumber = parseInt(page);
@@ -524,15 +524,21 @@ fastify.get(BASE_URL + "/admin/payment-histories", async (request, reply) => {
       // Calculate the number of documents to skip based on the current page and limit
       const skip = (pageNumber - 1) * limitNumber;
   
+      // Build the query object dynamically
+      const query = { status: "complete" };
+      if (customer) {
+        query.customer = customer; // Add the customer filter if provided
+      }
+
       // Query for completed purchases with pagination
-      const customers = await Purchase.find({ status: "complete" })
+      const customers = await Purchase.find(query)
         .lean()
         .skip(skip)
         .limit(limitNumber)
         .exec();
   
       // Get the total number of purchases to calculate total pages
-      const totalCustomers = await Purchase.countDocuments({ status: "complete" });
+      const totalCustomers = await Purchase.countDocuments(query);
   
       // Calculate total pages based on total documents and limit
       const totalPages = Math.ceil(totalCustomers / limitNumber);
@@ -554,4 +560,4 @@ fastify.get(BASE_URL + "/admin/payment-histories", async (request, reply) => {
         event_code: 0
       });
     }
-  });  
+  });
