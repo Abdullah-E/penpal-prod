@@ -159,6 +159,7 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
       "gender",
       "state",
       "bio",
+      "role",
       "imageUrl",
       "profileComplete",
     ];

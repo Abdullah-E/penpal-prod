@@ -8,6 +8,7 @@ import Customer, {customerDefaultValues, updatePendingPayments} from "../models/
 import { getUserFromToken } from "../utils/firebase_utils.js"
 import { applyCustomerUpdate, createCustomer} from "../utils/db_utils.js"
 import { extendDateByMonth, isEmpty, parseCustomerInfo} from "../utils/misc_utils.js";
+import Purchase from "../models/purchase.js";
 
 // import { frontendUrl } from "../index.js";
 
@@ -21,7 +22,7 @@ fastify.addHook("onRequest", async (request, reply) => {
                 status_code: 403,
                 event_code:0
             })
-        }else if(fb_user.role !== "admin"){
+        }else if(fb_user.role !== "user"){
             return reply.code(403).send({
                 data:null,
                 message: "Unauthorized - Not an admin",
@@ -41,7 +42,7 @@ fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
         const approvedBool = param["approved"] === "true"?true:false
         const paymentBool = param["paymentPending"] === "false"?false:true
         const paginate = param["p"] && param["l"]
-        
+
         const query = {
             ...(id && id.length > 0 ? {_id:{$in:id}} : {}),
             ...(param["approved"]?{"customerStatus.profileApproved":approvedBool}:{}),
@@ -510,3 +511,47 @@ fastify.put(BASE_URL+"/admin/customer-status", async (request, reply) => {
         })
     }
 })
+
+fastify.get(BASE_URL + "/admin/payment-histories", async (request, reply) => {
+    try {
+      // Get page and limit from query parameters, with default values for both
+      const { page = 1, limit = 10 } = request.query;
+  
+      // Convert page and limit to integers, in case they are passed as strings
+      const pageNumber = parseInt(page);
+      const limitNumber = parseInt(limit);
+  
+      // Calculate the number of documents to skip based on the current page and limit
+      const skip = (pageNumber - 1) * limitNumber;
+  
+      // Query for completed purchases with pagination
+      const customers = await Purchase.find({ status: "complete" })
+        .lean()
+        .skip(skip)
+        .limit(limitNumber)
+        .exec();
+  
+      // Get the total number of purchases to calculate total pages
+      const totalCustomers = await Purchase.countDocuments({ status: "complete" });
+  
+      // Calculate total pages based on total documents and limit
+      const totalPages = Math.ceil(totalCustomers / limitNumber);
+  
+      reply.send({
+        data: customers,
+        currentPage: pageNumber,
+        totalPages: totalPages,
+        totalItems: totalCustomers,
+        message: `Customers retrieved successfully`,
+        event_code: 1,
+        status_code: 200
+      });
+    } catch (err) {
+      reply.code(500).send({
+        data: null,
+        message: err.message,
+        status_code: 500,
+        event_code: 0
+      });
+    }
+  });  
