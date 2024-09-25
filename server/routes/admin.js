@@ -21,7 +21,7 @@ fastify.addHook("onRequest", async (request, reply) => {
                 message: "Unauthorized - No token/Invalid token",
                 status_code: 403,
                 event_code:0
-            })
+            });
         }else if(fb_user.role !== "admin"){
             return reply.code(403).send({
                 data:null,
