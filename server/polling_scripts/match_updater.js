@@ -19,7 +19,7 @@ const matchCustomers = async () => {
             console.log("No customers to match")
             return
         }
-        console.log("matching customers", customers.length)
+        // console.log("matching customers", customers.length)
         let cust_update = false
 
         const users = await User.find({role: "user", profileComplete: true})
@@ -31,7 +31,7 @@ const matchCustomers = async () => {
                 if(existingCustomer){
                     continue
                 }
-                console.log("Matching", user.firstName, customer.basicInfo.firstName)
+                // console.log("Matching", user.firstName, customer.basicInfo.firstName)
                 cust_update = true
                 const score = calculateCompatibility(user.personalityInfo, customer.personalityInfo)
                 const index = findInsertionIndex(user.compatibleCustomers, score)

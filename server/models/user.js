@@ -129,7 +129,12 @@ const userSchema = new mongoose.Schema({
     completedPurchases:{
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'Purchase'
-    }
+    },
+    referralBalance: {
+        type: Number,
+        required: false,
+        default: 0
+    },
 })
 
 userSchema.pre('save', async function(next) {

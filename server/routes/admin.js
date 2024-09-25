@@ -560,4 +560,90 @@ fastify.get(BASE_URL + "/admin/payment-histories", async (request, reply) => {
         event_code: 0
       });
     }
-  });
+});
+
+fastify.get(BASE_URL + "/admin/user-listing", async (request, reply) => {
+    try {
+      // Get page and limit from query parameters, with default values for both
+      const { page = 1, limit = 10, user } = request.query;
+  
+      // Convert page and limit to integers, in case they are passed as strings
+      const pageNumber = parseInt(page);
+      const limitNumber = parseInt(limit);
+  
+      // Calculate the number of documents to skip based on the current page and limit
+      const skip = (pageNumber - 1) * limitNumber;
+
+      const users = await User.find({role:'user'})
+        .lean()
+        .skip(skip)
+        .limit(limitNumber)
+        .exec();
+  
+      // Get the total number of purchases to calculate total pages
+      const totalUsers = await User.countDocuments({role:'user'});
+  
+      // Calculate total pages based on total documents and limit
+      const totalPages = Math.ceil(totalUsers / limitNumber);
+  
+      reply.send({
+        data: users,
+        currentPage: pageNumber,
+        totalPages: totalPages,
+        totalItems: totalUsers,
+        message: `Users retrieved successfully`,
+        event_code: 1,
+        status_code: 200
+      });
+    } catch (err) {
+      reply.code(500).send({
+        data: null,
+        message: err.message,
+        status_code: 500,
+        event_code: 0
+      });
+    }
+});
+
+fastify.post(BASE_URL + "/admin/add-referral", async (request, reply) => {
+    try {
+
+        const { userId, amount } = request.body;
+
+        const user = await User.findOne({_id: userId}).exec();
+        if(!user) {
+            return reply.send({
+                data:null,
+                message: "User not exists",
+                event_code:0,
+                status_code: 400
+            })
+        }
+        if(!amount || amount < 0) {
+            return reply.send({
+                data:null,
+                message: "Invalid amount",
+                event_code:0,
+                status_code: 400
+            })
+        }
+        user.referralBalance += amount;
+        await user.save();
+
+        reply.send({
+            data: user,
+            message: `Referral balance added successfully`,
+            event_code: 1,
+            status_code: 200
+        })
+    }
+    catch(err){
+        console.error(err)
+        return reply.send({
+            data:null,
+            message:err.message,
+            event_code:0,
+            status_code:500
+        });
+    }
+});

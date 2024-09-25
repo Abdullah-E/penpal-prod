@@ -162,6 +162,7 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
       "role",
       "imageUrl",
       "profileComplete",
+      "referralBalance"
     ];
     const user = await User.findOne({ firebaseUid: request.user.uid }).select(
       selectedFields
