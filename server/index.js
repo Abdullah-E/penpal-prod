@@ -6,6 +6,8 @@ fastify.get(BASE_URL, async () => {
   return { message: "Welcome to Penpal API" };
 });
 
+
+
 import "./routes/user.js"
 import "./routes/admin.js"
 import "./routes/customer.js"
