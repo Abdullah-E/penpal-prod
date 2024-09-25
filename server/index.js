@@ -31,7 +31,6 @@ async function startServer() {
     process.exit(1);
   }
 }
-
 //startServer();
 await mongo;
 fastify.listen(
