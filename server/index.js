@@ -2,7 +2,6 @@ import "dotenv/config";
 import { mongo } from "./config/db.js";
 import { fastify, BASE_URL } from "./routes/init.js";
 
-
 fastify.get(BASE_URL, async () => {
   return { message: "Welcome to Penpal API" };
 });
@@ -32,7 +31,6 @@ async function startServer() {
     process.exit(1);
   }
 }
-
 //startServer();
 await mongo;
 fastify.listen(
