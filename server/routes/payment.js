@@ -45,7 +45,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
 
         if(provider === 'stripe'){
-            const {line_items, totalAmount, productsList} = stripeLineItemsAndPrice(productsFromDB, cart);
+            const {line_items, totalAmount, productsList} = stripeLineItemsAndPrice(productsFromDB, cart, user?.referralBalance);
             // console.log(line_items, totalAmount, productsList)
             if(line_items.length === 0){
                 return reply.status(400).send({
@@ -56,12 +56,14 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
                 })
             }
 
+            console.log('line_items', line_items);
+
             const session = await stripe.checkout.sessions.create({
                 ui_mode:'embedded',
                 mode: 'payment',
                 payment_method_types: ['card'],
                 line_items: line_items,
-                return_url: `${base_url}/payment/result?session_id={CHECKOUT_SESSION_ID}`,
+                return_url: `http://localhost:5000/payment/result?session_id={CHECKOUT_SESSION_ID}`,
             })
             const newPurchase = new Purchase({
                 user: user._id,
@@ -69,6 +71,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
                 customer: cid,
                 sessionId: session.id,
                 totalPrice: totalAmount,
+                usedReferrals: user.referralBalance,
                 status: 'open',
             })
             await newPurchase.save()
@@ -108,7 +111,6 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
 
 })
 
-
 fastify.post(BASE_URL+'/payment/capture-paypal-order', async (request, reply) => {
 
 })
@@ -134,6 +136,7 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         }
         console.log('Session completed')
         const purchase = await Purchase.findOne({sessionId: session_id}).populate('products.product').exec()
+        const user = await User.findOne({_id: purchase.user});
         // if(test_status !== 'completed'){
         purchase.paidAt = new Date();
         purchase.status = session.status;
@@ -196,6 +199,10 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         customer.markModified('customerStatus')
         customer.markModified('pendingPayments')
         await customer.save()
+        if(user.referralBalance > 0) {
+            user.referralBalance -= purchase.usedReferrals;
+            await user.save();
+        }
         return reply.send({
             data:{
                 status: session.status
@@ -258,4 +265,115 @@ fastify.post(BASE_URL+'/webhook', async (request, reply) => {
     // }
 
     reply.status(200).send({received: true})
+})
+
+fastify.post(BASE_URL+'/payment/pay-with-referral', async (request, reply) => {
+    try{
+
+        let { cid, ...cart } = request.body;
+        const { productsFromDB, updateNum } = await productsListFromDB(cart)
+        cart.updateNum = updateNum;
+        const user = await User.findOne({firebaseUid: request.user.uid}).exec()
+
+            const { line_items, totalAmount, productsList } = stripeLineItemsAndPrice(productsFromDB, cart);
+            if(line_items.length === 0){
+                return reply.status(400).send({
+                    message: 'No products found',
+                    data: null,
+                    status_code: 400,
+                    event_code: 0
+                })
+            }
+
+            const newPurchase = new Purchase({
+                user: user._id,
+                products: productsList,
+                customer: cid,
+                totalPrice: totalAmount,
+                transactionType: 'referral',
+                status: 'open',
+            })
+            await newPurchase.save()
+
+            console.log('Session completed')
+            const purchase = await Purchase.findOne({_id: newPurchase?._id}).populate('products.product').exec()
+
+            purchase.paidAt = new Date();
+            purchase.status = "complete";
+            let customer = await Customer.findOne({_id: purchase.customer}).exec()
+            for(const product of purchase.products){
+                const prodName = product.product.name
+                // purchase.status = session.status
+                if(prodName === 'creation'){
+                    customer.pendingPayments.creation = false
+                    customer.customerStatus.status = 'unapproved'
+                    // customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
+                }
+                else if(prodName === 'renewal'){
+                    customer.pendingPayments.renewal = false;
+                    customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12);
+                    customer.customerStatus.status = 'active';
+                }
+                else if(prodName === 'update'){
+                    const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
+                    if(update){
+                        update.paymentPending = false;
+                        update.paidBy = purchase.user;
+                        await update.save();
+                    }
+                    customer.pendingPayments.update = false
+                    customer.pendingPayments.updateNum = 0
+                    customer.pendingPayments.basicInfo = {}
+                    customer.pendingPayments.personalityInfo = {}
+                }
+                else if(prodName === 'premiumPlacement'){
+                    customer.customerStatus.premiumPlacement = true 
+                    customer.customerStatus.premiumExpires = extendDateByMonth(customer.customerStatus.premiumExpires, product.quantity)
+                }
+                else if(prodName === 'featuredPlacement'){
+                    customer.customerStatus.featuredPlacement = true
+                    customer.customerStatus.featuredExpires = extendDateByMonth(customer.customerStatus.featuredExpires, product.quantity)
+                }
+                else if(prodName === 'wordLimit'){
+                    customer.pendingPayments.wordLimit = 0
+    
+                    customer.customerStatus.wordLimitExtended = true
+                    customer.customerStatus.bioWordLimit += product.quantity * 100
+                }
+                else if(prodName === 'photo'){
+                    customer.pendingPayments.photo = false
+                    customer.pendingPayments.totalPaidPhotos = 0
+    
+                    customer.customerStatus.photoLimit += product.quantity
+                }
+    
+                await purchase.save()
+            }
+            customer.completedPurchases.push(purchase._id)
+            customer = await updatePendingPayments(customer)
+            customer.markModified('customerStatus')
+            customer.markModified('pendingPayments')
+            await customer.save()
+
+            // User Referral 
+            user.referralBalance -= totalAmount;
+            await user.save();
+            return reply.send({
+                data:{
+                    status: "complete"
+                    // customerEmail: session.customer_details.email
+                },
+                message: 'Session retrieved successful checkout',
+                status_code: 200,
+                event_code:1
+            })
+    }catch(err){
+        console.error(err)
+        return reply.status(500).send({
+            message: err.message,
+            data: null,
+            status_code: 500,
+            event_code: 0
+        })
+    }
 })

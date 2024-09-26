@@ -220,36 +220,63 @@ export const productsListFromDB = async (cart) => {
     return {productsFromDB, updateNum}
 }
 
-export const stripeLineItemsAndPrice = (db_prods, cart) => {
-    const productsList = []
-    let totalAmount = 0
+export const stripeLineItemsAndPrice = (db_prods, cart, referralBalance=0) => {
+    const productsList = [];
+    console.log('referralBalance', referralBalance);
+    let totalAmount = 0;
     const line_items = db_prods.map(product => {
-        let quantity = 1
-        if(product.name === 'wordLimit'){
-            quantity = cart.wordLimit
+        let quantity = 1;
+        let priceToDeduct = 0;
+
+        // Set quantity based on product type (custom logic for your cart)
+        if (product.name === 'wordLimit') {
+            quantity = cart.wordLimit;
+        } else if (product.name === 'update') {
+            quantity = cart.updateNum;
+        } else if (product.name === 'totalPaidPhotos') {
+            quantity = cart.totalPaidPhotos;
+        } else if (product.name === 'featuredPlacement') {
+            quantity = cart.featuredPlacement;
+        } else if (product.name === 'premiumPlacement') {
+            quantity = cart.premiumPlacement;
         }
-        else if(product.name === 'update'){
-            quantity = cart.updateNum
+
+        // Calculate the price for this product
+        let productPrice = product.price * quantity;
+        let pp = product.price;
+        // Deduct referral balance
+        if (referralBalance > 0) {
+            if (referralBalance >= productPrice) {
+                priceToDeduct = productPrice; // Deduct full product price
+                referralBalance -= productPrice;
+                productPrice = 0;
+            } else {
+                pp = referralBalance/quantity;
+                priceToDeduct = referralBalance; // Deduct remaining referral balance
+                productPrice -= referralBalance/quantity;
+                referralBalance = 0;
+            }
         }
-        else if (product.name === 'totalPaidPhotos'){
-            quantity = cart.totalPaidPhotos
-        }
-        else if(product.name === 'featuredPlacement'){
-            quantity = cart.featuredPlacement
-        }
-        else if(product.name === 'premiumPlacement'){
-            quantity = cart.premiumPlacement
-        }
-        totalAmount += product.price * quantity
+
+        totalAmount += pp * quantity; // Update totalAmount with adjusted price
+
         productsList.push({
             product: product._id,
             quantity: quantity,
             price: product.price
-        })
+        });
+
         return {
-            price: product.priceId,
-            quantity: quantity
-        }
-    })
-    return {line_items, totalAmount, productsList}
-}
+            price_data: {
+                currency: 'usd',
+                product_data: {
+                    name: product.name,
+                },
+                unit_amount: Math.round(pp * 100), // Amount in cents
+            },
+            quantity: quantity,
+        };
+    });
+
+    return {line_items, totalAmount, productsList};
+};

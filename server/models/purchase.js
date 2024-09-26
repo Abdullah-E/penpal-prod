@@ -1,8 +1,5 @@
 import mongoose from "mongoose"
 
-const TYPE_ENUMS = ['one-time', 'subscription']
-const PRODUCT_ENUMS = ['profileCreation', 'profileRenewal', 'profileUpdate']
-
 const purchaseSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -21,7 +18,7 @@ const purchaseSchema = new mongoose.Schema({
     }],
     sessionId:{
         type: String,
-        required: true
+        required: false
     },
     totalPrice: {
         type: Number,
@@ -40,6 +37,17 @@ const purchaseSchema = new mongoose.Schema({
         type: String,
         default: 'open',
         required: true
+    },
+    transactionType: {
+        type: String,
+        required: false,
+        enum: ['checkout', 'referral'],
+        default: 'checkout'
+    },
+    usedReferrals: {
+        type: Number,
+        required: false,
+        default: 0
     }
 })
 
