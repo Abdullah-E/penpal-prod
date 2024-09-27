@@ -38,7 +38,7 @@ fastify.addHook("onRequest", async (request, reply) => {
 fastify.post(BASE_URL + "/user", async (request, reply) => {
   console.log(request.query);
   const role = request.query.role || "user";
-  const { email, password, firstName, lastName } = request.body;
+  const { email, password, firstName, lastName, city, state, zipCode, mailingAddress } = request.body;
   try {
     const hashPass = await bcrypt.hash(password, 10);
     console.log(hashPass);
@@ -54,7 +54,10 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       role,
       age: "",
       gender: "",
-      state: "",
+      state: state && state[0] ? state[0]: "",
+      city,
+      zipCode,
+      mailingAddress,
       bio: "",
       imageUrl: "",
       profileComplete: false,

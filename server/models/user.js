@@ -58,6 +58,18 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: false,
     },
+    city:{
+        type: String,
+        required: false,
+    },
+    zipCode:{
+        type: String,
+        required: false,
+    },
+    mailingAddress:{
+        type: String,
+        required: false,
+    },
     bio:{
         type: String,
         required: false,
