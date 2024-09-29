@@ -37,13 +37,22 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         let {cid, ...cart} = request.body
         const provider = request.query.provider || 'stripe'
         const base_url = request.body.url || 'https://app.awayoutpenpals.com'
-        // cart = filterCart(cart)
+        const purchaseTypes = [];
+
         console.log('cart', cart)
         const {productsFromDB, updateNum} = await productsListFromDB(cart)
         cart.updateNum = updateNum
         console.log('cart updateNum', cart.updateNum)
         const user = await User.findOne({firebaseUid:request.user.uid}).exec()
-
+        if(cart?.featuredPlacement > 0) {
+            purchaseTypes.push('Feature Placement');
+        } else if (cart?.premiumPlacement > 0) {
+            purchaseTypes.push('Premium Placement');
+        } else if (cart?.wordLimit > 0) {
+            purchaseTypes.push('Word Limit');
+        } else if (cart?.updateNum > 0) {
+            purchaseTypes.push('Update Profile');
+        }
         if(provider === 'stripe'){
             const {line_items, totalAmount, productsList} = stripeLineItemsAndPrice(productsFromDB, cart, user?.referralBalance);
             // console.log(line_items, totalAmount, productsList)
@@ -72,6 +81,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
                 sessionId: session.id,
                 totalPrice: totalAmount,
                 usedReferrals: user.referralBalance,
+                purchaseTypes: purchaseTypes??[],
                 status: 'open',
             })
             await newPurchase.save()
@@ -274,7 +284,16 @@ fastify.post(BASE_URL+'/payment/pay-with-referral', async (request, reply) => {
         const { productsFromDB, updateNum } = await productsListFromDB(cart)
         cart.updateNum = updateNum;
         const user = await User.findOne({firebaseUid: request.user.uid}).exec()
-
+        const purchaseTypes = [];
+        if(cart?.featuredPlacement > 0) {
+            purchaseTypes.push('Feature Placement');
+        } else if (cart?.premiumPlacement > 0) {
+            purchaseTypes.push('Premium Placement');
+        } else if (cart?.wordLimit > 0) {
+            purchaseTypes.push('Word Limit');
+        } else if (cart?.updateNum > 0) {
+            purchaseTypes.push('Update Profile');
+        }
             const { line_items, totalAmount, productsList } = stripeLineItemsAndPrice(productsFromDB, cart);
             if(line_items.length === 0){
                 return reply.status(400).send({
@@ -291,6 +310,7 @@ fastify.post(BASE_URL+'/payment/pay-with-referral', async (request, reply) => {
                 customer: cid,
                 totalPrice: totalAmount,
                 transactionType: 'referral',
+                purchaseTypes: purchaseTypes ?? [],
                 status: 'open',
             })
             await newPurchase.save()

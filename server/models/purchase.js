@@ -44,6 +44,10 @@ const purchaseSchema = new mongoose.Schema({
         enum: ['checkout', 'referral'],
         default: 'checkout'
     },
+    purchaseTypes: [{
+        type: String,
+        required: false,
+    }],
     usedReferrals: {
         type: Number,
         required: false,

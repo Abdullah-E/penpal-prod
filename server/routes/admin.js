@@ -535,6 +535,10 @@ fastify.get(BASE_URL + "/admin/payment-histories", async (request, reply) => {
         .lean()
         .skip(skip)
         .limit(limitNumber)
+        .populate({
+            path: 'user',
+            select: 'email' 
+         })
         .exec();
   
       // Get the total number of purchases to calculate total pages
