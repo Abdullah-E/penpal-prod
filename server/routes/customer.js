@@ -341,13 +341,31 @@ fastify.put(BASE_URL + '/customer/rate', async(request, reply)=>{
 
 fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
     try{
-        const n = request.query.n || 5;
+        const n = request.query.n || 8; // default to 8 if not provided
         const customers = await Customer.aggregate([
-            {$match:{"customerStatus.profileApproved":true, "customerStatus.status":"active"}},
-            {$project:{"basicInfo.firstName":1, "basicInfo.lastName":1, rating:1, "photos.imageUrl":1, "basicInfo.age":1, "basicInfo.state":1, "customerStatus.tag":1}},
-            {$sample:{size:parseInt(n)}},
+            {
+                $match: {
+                    "customerStatus.profileApproved": true,
+                    "customerStatus.status": "active",
+                    "basicInfo.gender": "Male"
+                }
+            },
+            {
+                $project: {
+                    "basicInfo.firstName": 1,
+                    "basicInfo.lastName": 1,
+                    rating: 1,
+                    "photos.imageUrl": 1,
+                    "basicInfo.age": 1,
+                    "basicInfo.state": 1,
+                    "customerStatus.tag": 1
+                }
+            },
+            { 
+                $limit: parseInt(n) // Fetch the top 8 results
+            }
         ]).exec();
-
+        
         return reply.code(200).send({
             data:customers,
             message:"Random customers found successfully",
