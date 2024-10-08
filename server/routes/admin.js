@@ -35,59 +35,66 @@ fastify.addHook("onRequest", async (request, reply) => {
     }
 })
 
-fastify.get(BASE_URL+"/admin/customer", async (request, reply) => {
-    try{
-        const param = request.query
-        const id = param["id"] && typeof param["id"] === "" ? [param["id"]] : param["id"]
-        const approvedBool = param["approved"] === "true"?true:false
-        const paymentBool = param["paymentPending"] === "false"?false:true
-        const paginate = param["p"] && param["l"]
-
-        const query = {
-            ...(id && id.length > 0 ? {_id:{$in:id}} : {}),
-            ...(param["approved"]?{"customerStatus.profileApproved":approvedBool}:{}),
-            ...(param["paymentPending"]?{"pendingPayments.creation":paymentBool}:{})
+fastify.get(BASE_URL + "/admin/customer", async (request, reply) => {
+    try {
+      const param = request.query;
+      const id = param["id"] && typeof param["id"] === "string" ? [param["id"]] : param["id"];
+      const approvedBool = param["approved"] === "true" ? true : false;
+      const paymentBool = param["paymentPending"] === "false" ? false : true;
+      const paginate = param["p"] && param["l"];
+  
+      const query = {
+        ...(id && id.length > 0 ? { _id: { $in: id } } : {}),
+        ...(param["approved"] ? { "customerStatus.profileApproved": approvedBool } : {}),
+        ...(param["paymentPending"] ? { "pendingPayments.creation": paymentBool } : {})
+      };
+      console.log(query);
+  
+      let customers = [];
+      if (paginate) {
+        const page = parseInt(param["p"] || 0);
+        const limit = parseInt(param["l"] || 50);
+        customers = await Customer.find(query)
+          .sort({ _id: -1 }) // Sort by creation date in descending order
+          .skip(page * limit)
+          .limit(limit)
+          .lean()
+          .exec();
+      } else {
+        customers = await Customer.find(query)
+          .sort({ _id: -1 }) // Sort by creation date in descending order
+          .lean()
+          .exec();
+      }
+  
+      customers.map(customer => {
+        if (customer.customerStatus.specialInstructionsFlag) {
+          console.log("specialInstructionsFlag", customer.basicInfo.firstName);
+          customer.specialInstructionsFlag = true;
+          customer.specialInstructionsText = customer.customerStatus.specialInstructionsText;
+        } else {
+          customer.specialInstructionsFlag = false;
+          customer.specialInstructionsText = "";
         }
-        console.log(query)
-        let customers = []
-        if(paginate){
-
-            const page = parseInt(param["p"] || 0)
-            const limit = parseInt(param["l"] || 50)
-            customers = await Customer.find(query).skip(page*limit).limit(limit).lean().exec();
-        }
-        else{
-            customers = await Customer.find(query).lean().exec()
-        }
-        customers.map(customer => {
-            if(customer.customerStatus.specialInstructionsFlag){
-                console.log("specialInstructionsFlag", customer.basicInfo.firstName)
-                customer.specialInstructionsFlag = true
-                customer.specialInstructionsText = customer.customerStatus.specialInstructionsText
-            }
-            else{
-                customer.specialInstructionsFlag = false
-                customer.specialInstructionsText = ""
-            }
-            return customer
-        })
-        
-        reply.send({
-            data: customers,
-            message: `Customer${customers.length === 1? "":"s"} found successfully`,
-            event_code: 1,
-            status_code: 200
-        })
+        return customer;
+      });
+  
+      reply.send({
+        data: customers,
+        message: `Customer${customers.length === 1 ? "" : "s"} found successfully`,
+        event_code: 1,
+        status_code: 200
+      });
+    } catch (err) {
+      reply.code(500).send({
+        data: null,
+        message: err.message,
+        status_code: 500,
+        event_code: 0
+      });
     }
-    catch(err){
-        reply.code(500).send({
-            data:null,
-            message:err.message,
-            status_code:500,
-            event_code:0
-        })
-    }
-})
+  });
+  
 
 fastify.post(BASE_URL+"/admin/customer", async(request, reply)=>{
     try{
