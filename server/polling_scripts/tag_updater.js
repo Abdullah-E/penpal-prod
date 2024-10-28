@@ -2,7 +2,7 @@ import Customer from '../models/customer.js';
 
 const updateTags = async () => {
     console.log("Updating tags")
-    const customers = await Customer.find()
+    const customers = await Customer.find();
     for(const customer of customers){
         if(customer.createdAt > new Date(new Date() - (7* 24 * 60 * 60 * 1000))){
             customer.customerStatus.tag = "New Profile"
