@@ -80,7 +80,7 @@ const userSchema = new mongoose.Schema({
     },
     stripeCustomer: {
         type: String,
-        required: true
+        required: false
     },
     createdAt:{
         type: Date,
