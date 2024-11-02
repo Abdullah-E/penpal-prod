@@ -55,7 +55,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
         }
         if(provider === 'stripe'){
             const {line_items, totalAmount, productsList} = stripeLineItemsAndPrice(productsFromDB, cart, user?.referralBalance);
-            // console.log(line_items, totalAmount, productsList)
+            console.log(line_items, totalAmount, productsList)
             if(line_items.length === 0){
                 return reply.status(400).send({
                     message: 'No products found',
@@ -70,17 +70,19 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             const session = await stripe.checkout.sessions.create({
                 ui_mode:'embedded',
                 mode: 'payment',
+                customer: user?.stripeCustomer,
                 payment_method_types: ['card'],
                 line_items: line_items,
                 return_url: `${base_url}/payment/result?session_id={CHECKOUT_SESSION_ID}`,
             })
+            console.log('user', user);
             const newPurchase = new Purchase({
-                user: user._id,
+                user: user?._id,
                 products: productsList,
                 customer: cid,
                 sessionId: session.id,
                 totalPrice: totalAmount,
-                usedReferrals: user.referralBalance,
+                usedReferrals: user?.referralBalance,
                 purchaseTypes: purchaseTypes??[],
                 status: 'open',
             })

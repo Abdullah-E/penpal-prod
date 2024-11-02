@@ -17,6 +17,13 @@ import { personalitySchema } from "../models/personality.js";
 import { verifyToken } from "../utils/firebase_utils.js";
 import { flagFavorites, flagRatings, flagCreated, flagUpdated, calculateCompatibility } from "../utils/db_utils.js";
 import Purchase from "../models/purchase.js";
+import Stripe from 'stripe'
+const stripe = new Stripe(process.env.STRIPE_API_KEY)
+stripe.paymentMethodDomains.create({
+    domain_name: 'app.awayoutpenpals.com'
+}).then((domain) => {
+    console.log(`domain ${domain.domain_name} registered`)
+})
 
 // import {BASE_URL} from '../server.js'
 fastify.addHook("onRequest", async (request, reply) => {
@@ -45,6 +52,12 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
     const fb_user = await createUserWithEmailAndPassword(auth, email, password);
     await admin.auth().setCustomUserClaims(fb_user.user.uid, { role });
 
+    const customer = await stripe.customers.create({
+      email: email?.toLowerCase(),
+      name: firstName + lastName,
+      description: "AwayoutPenpal",
+    });
+
     const user = await User.create({
       email,
       password: hashPass,
@@ -60,6 +73,7 @@ fastify.post(BASE_URL + "/user", async (request, reply) => {
       mailingAddress,
       bio: "",
       imageUrl: "",
+      stripeCustomer: customer.id,
       profileComplete: false,
     });
     const userObj = user.toObject();
@@ -165,7 +179,8 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
       "role",
       "imageUrl",
       "profileComplete",
-      "referralBalance"
+      "referralBalance",
+      "stripeCustomer"
     ];
     const user = await User.findOne({ firebaseUid: request.user.uid }).select(
       selectedFields
@@ -178,6 +193,15 @@ fastify.get(BASE_URL + "/user", async (request, reply) => {
         status_code: 404,
       });
       return;
+    }
+    if(!user?.stripeCustomer) {
+      const customer = await stripe.customers.create({
+        email: user?.email?.toLowerCase(),
+        name: user?.firstName + user?.lastName,
+        description: "AwayoutPenpal",
+      });
+      user.stripeCustomer = customer.id;
+      await user.save();
     }
     const userObj = user.toObject();
     delete userObj._id;
