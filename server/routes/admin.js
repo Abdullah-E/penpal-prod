@@ -99,7 +99,7 @@ fastify.get(BASE_URL + "/admin/customer", async (request, reply) => {
 fastify.post(BASE_URL+"/admin/customer", async(request, reply)=>{
     try{
 
-        const params = request.query
+        const params = request.query;
         const paidCreation = params["pay"] && params["pay"] === "false" ? false : true
         const approved = params["approve"] && params["approve"] === "false" ? false : true
         const newCustomer = await createCustomer(request.body, {
