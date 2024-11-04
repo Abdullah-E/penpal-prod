@@ -54,7 +54,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
             purchaseTypes.push('Update Profile');
         }
         if(provider === 'stripe'){
-            const {line_items, totalAmount, productsList} = stripeLineItemsAndPrice(productsFromDB, cart, user?.referralBalance);
+            const {line_items, totalAmount, productsList} = stripeLineItemsAndPrice(productsFromDB, cart);
             console.log(line_items, totalAmount, productsList)
             if(line_items.length === 0){
                 return reply.status(400).send({
