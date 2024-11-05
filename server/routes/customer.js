@@ -1,7 +1,8 @@
 import { fastify, BASE_URL } from "./init.js";
 import mongoose from "mongoose";
 
-import Customer, {customerDefaultValues, updatePendingPayments, DeletedCustomer, nonPaidFields} from "../models/customer.js";
+import Customer, {updatePendingPayments, DeletedCustomer, nonPaidFields} from "../models/customer.js";
+import Notification from "../models/notification.js";
 import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdate.js";
 import Favorite from "../models/favorite.js";
@@ -31,7 +32,20 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         const options = {
             "specialInstructions":true
         }
-        const newCust = await createCustomer(request.body, options, request.user)
+        const newCust = await createCustomer(request.body, options, request.user);
+        const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+        const newNotification = new Notification({
+            read: false,
+            readAt: null,
+            type: "customerPurchase",
+            message: `${user?.firstName} created a new profile`,
+            link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
+            customer: newCust._id,
+            user: user._id
+        })
+        const createdNotification = await newNotification.save()
+        await User.updateOne({_id: user._id}, {$push: {notifications: createdNotification._id}})
+
         return reply.code(201).send({
             data:newCust,
             message:"Customer created successfully",
@@ -337,6 +351,7 @@ fastify.put(BASE_URL + '/customer/rate', async(request, reply)=>{
             data:null
         });
     }
+
 })
 
 fastify.get(BASE_URL + '/customer/random', async(request, reply)=>{
@@ -558,3 +573,34 @@ fastify.get(BASE_URL + '/customer/wipe-and-clean', async(request, reply)=>{
         console.error(error)
     }
 })
+// fastify.get(BASE_URL + '/customer/update-images', async(request, reply)=>{
+//     try{
+//         const users = await Customer.find({
+//             "basicInfo.gender":"Female",
+//             "photos.imageUrl": ""
+//         }).exec();
+
+//         let imgIdx = 0;
+//         for(let user of users){
+//             // const randomIndex = Math.floor(Math.random() * userImages.length);
+            
+//             const selectedImage = userImages[imgIdx];
+
+//             user.photos.imageUrl = selectedImage;
+//             //    user.photos.imageUrl = "";
+//             await user.save()
+//             imgIdx++;
+//             if(imgIdx == userImages?.length) {
+//                 imgIdx = 0;
+//             }
+//         }
+//         return reply.send({
+//             data:users,
+//             message:"Users wiped",
+//             event_code:1,
+//             status_code:200
+//         })
+//     }catch(error){
+//         console.error(error)
+//     }
+// })
