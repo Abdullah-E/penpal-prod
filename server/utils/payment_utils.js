@@ -170,24 +170,6 @@ export const filterCart = (cart) => {
 }
 
 export const productsListFromDB = async (cart) => {
-    /*
-    CART FORMAT FROM FRONTEND:
-    {
-        basicInfo:{
-            fieldName:bool
-        },
-        personalityInfo:{
-            fieldName:bool
-        },
-        creation:bool,
-        renewal:bool,
-
-        featuredPlacement:int,
-        premiumPlacement:int,
-        wordLimit:int,
-        totalPaidPhotos:int
-    }
-    */
     const boughtProductsSet = new Set()
     let updateNum = 0
     for(const [key, value] of Object.entries(cart)){

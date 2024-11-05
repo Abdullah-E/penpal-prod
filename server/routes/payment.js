@@ -1,15 +1,15 @@
 import {BASE_URL, fastify} from './init.js'
 
 import User from '../models/user.js'
+import Notification from '../models/notification.js'
 import Purchase from '../models/purchase.js'
 import Product from '../models/product.js'
 import Customer, {updatePendingPayments} from '../models/customer.js'
 import CustomerUpdate from '../models/customerUpdate.js'
 
-import {productsListFromDB, stripeLineItemsAndPrice, createPaypalOrder, filterCart} from '../utils/payment_utils.js'
-import { verifyToken } from '../utils/firebase_utils.js'
-// import {applyCustomerUpdate} from '../utils/db_utils.js'
-import { extendDateByMonth } from '../utils/misc_utils.js'
+import { productsListFromDB, stripeLineItemsAndPrice, createPaypalOrder } from '../utils/payment_utils.js'
+import { verifyToken } from '../utils/firebase_utils.js';
+import { extendDateByMonth } from '../utils/misc_utils.js';
 
 import Stripe from 'stripe'
 const stripe = new Stripe(process.env.STRIPE_API_KEY)
@@ -153,24 +153,19 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         purchase.paidAt = new Date();
         purchase.status = session.status;
         let customer = await Customer.findOne({_id: purchase.customer}).exec()
-        for(const product of purchase.products){
-            const prodName = product.product.name
-            console.log('Product', prodName)
-            // purchase.status = session.status
+        for(const product of purchase.products) {
+            const prodName = product.product.name;
             if(prodName === 'creation'){
-                customer.pendingPayments.creation = false
-                customer.customerStatus.status = 'unapproved'
-                // customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
+                customer.pendingPayments.creation = false;
+                customer.customerStatus.status = 'unapproved';
             }
             else if(prodName === 'renewal'){
-                console.log('Renewal product')
-                customer.pendingPayments.renewal = false
-                customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12)
-                console.log('Customer status', customer.customerStatus.expiresAt)
-                console.log('Customer status', customer.customerStatus)
-                customer.customerStatus.status = 'active'
+                customer.pendingPayments.renewal = false;
+                customer.customerStatus.status = 'active';
+                customer.customerStatus.expiresAt = extendDateByMonth(customer.customerStatus.expiresAt, 12);
             }
             else if(prodName === 'update'){
+                //One
                 const update = await CustomerUpdate.findOne({_id: customer.customerUpdate})
                 if(update){
                     update.paymentPending = false
@@ -210,11 +205,24 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         customer = await updatePendingPayments(customer)
         customer.markModified('customerStatus')
         customer.markModified('pendingPayments')
-        await customer.save()
-        if(user.referralBalance > 0) {
-            user.referralBalance -= purchase.usedReferrals;
-            await user.save();
-        }
+        await customer.save();
+
+        const newNotification = new Notification({
+            read: false,
+            readAt: null,
+            type: "customerPurchase",
+            message: `${user?.firstName} make a transaction`,
+            link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
+            customer: customer._id,
+            user: user._id
+        })
+        const createdNotification = await newNotification.save()
+        await User.updateOne({_id: user._id}, {$push: {notifications: createdNotification._id}})
+
+        // if(user.referralBalance > 0) {
+        //     user.referralBalance -= purchase.usedReferrals;
+        //     await user.save();
+        // }
         return reply.send({
             data:{
                 status: session.status

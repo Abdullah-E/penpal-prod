@@ -3,11 +3,11 @@ import { fastify, BASE_URL } from "./init.js";
 import User from "../models/user.js";
 import CustomerUpdate from "../models/customerUpdate.js"
 import Notification from "../models/notification.js";
-import Customer, {customerDefaultValues, updatePendingPayments} from "../models/customer.js"
+import Customer, { updatePendingPayments } from "../models/customer.js"
 
 import { getUserFromToken } from "../utils/firebase_utils.js"
 import { applyCustomerUpdate, createCustomer} from "../utils/db_utils.js"
-import { extendDateByMonth, isEmpty, parseCustomerInfo} from "../utils/misc_utils.js";
+import { extendDateByMonth, isEmpty } from "../utils/misc_utils.js";
 import Purchase from "../models/purchase.js";
 
 // import { frontendUrl } from "../index.js";
@@ -359,22 +359,40 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
         const query = {
             ...(ids && ids.length > 0 ? {_id:{$in:ids}} : {})
         }
-    
+
         const customersToUpdate = await Customer.find(query).populate("customerUpdate").exec()
-        const updatedCustomers = []
+        const updatedCustomers = [];
+        console.log('updatedCustomers', customersToUpdate);
         for(let customer of customersToUpdate){
             if(!customer.customerUpdate){
                 console.error("No update found for customer", customer._id)
                 continue
             }
-            const update = await CustomerUpdate.findById(customer.customerUpdate._id)
+            const update = await CustomerUpdate.findById(customer.customerUpdate._id).populate({
+                select: 'basicInfo',
+                path: 'customer'
+            })
+            console.log('update', update);
             
             customer = await applyCustomerUpdate(customer, update)
             await customer.save()
 
             update.updateApproved = true
             updatedCustomers.push(customer)
-            await update.save()
+            await update.save();
+
+            console.log('Update Approved');
+            const newNotification = new Notification({
+                read: false,
+                readAt: null,
+                type: "customerUpdate",
+                message: `${update?.customer.basicInfo.firstName} from your update list has been updated and approved by admin`,
+                link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
+                customer: customer._id,
+                user: update.user
+            })
+            const createdNotification = await newNotification.save()
+            await User.updateOne({_id: update.user}, {$push: {notifications: createdNotification._id}})
         }
         reply.send({
             data: updatedCustomers.length === 1 ? updatedCustomers[0] : updatedCustomers,

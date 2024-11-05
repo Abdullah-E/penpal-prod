@@ -15,6 +15,7 @@ const NOTIFICATION_TYPES = [
     "featuredExpired",
     "premiumExpired",
     "profileExpired",
+    "customerPurchase"
 ]
 
 const notificationSchema = new mongoose.Schema({
