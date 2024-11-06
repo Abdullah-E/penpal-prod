@@ -33,7 +33,8 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
             "specialInstructions":true
         }
         const newCust = await createCustomer(request.body, options, request.user);
-        const user = await User.findOne({firebaseUid:request.user.uid}).exec()
+        const user = await User.findOne({firebaseUid:request.user.uid}).exec();
+        const adminUser = await User.findOne({email:process.env.GMAIL_EMAIL ?? "penpaldev@gmail.com"})
         const newNotification = new Notification({
             read: false,
             readAt: null,
@@ -41,7 +42,7 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
             message: `${user?.firstName} created a new profile`,
             link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
             customer: newCust._id,
-            user: user._id
+            user: adminUser._id
         })
         const createdNotification = await newNotification.save()
         await User.updateOne({_id: user._id}, {$push: {notifications: createdNotification._id}})

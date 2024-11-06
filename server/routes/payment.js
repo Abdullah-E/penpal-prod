@@ -207,17 +207,18 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         customer.markModified('pendingPayments')
         await customer.save();
 
+        const adminUser = await User.findOne({email:process.env.GMAIL_EMAIL ?? "penpaldev@gmail.com"});
         const newNotification = new Notification({
             read: false,
             readAt: null,
             type: "customerPurchase",
-            message: `${user?.firstName} make a transaction`,
+            message: `${user?.firstName} make a transaction on customer profile`,
             link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
             customer: customer._id,
-            user: user._id
+            user: adminUser._id
         })
         const createdNotification = await newNotification.save()
-        await User.updateOne({_id: user._id}, {$push: {notifications: createdNotification._id}})
+        await User.updateOne({_id: adminUser._id}, {$push: {notifications: createdNotification._id}})
 
         // if(user.referralBalance > 0) {
         //     user.referralBalance -= purchase.usedReferrals;
