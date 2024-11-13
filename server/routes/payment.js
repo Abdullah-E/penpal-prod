@@ -73,6 +73,7 @@ fastify.post(BASE_URL+'/payment/create-checkout-session', async (request, reply)
                 customer: user?.stripeCustomer,
                 payment_method_types: ['card'],
                 line_items: line_items,
+                // return_url: `http://localhost:5000/payment/result?session_id={CHECKOUT_SESSION_ID}`,
                 return_url: `${base_url}/payment/result?session_id={CHECKOUT_SESSION_ID}`,
             })
             console.log('user', user);
@@ -207,6 +208,17 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         customer.markModified('pendingPayments')
         await customer.save();
 
+        const notificationToUser = new Notification({
+            read: false,
+            readAt: null,
+            type: "customerPurchase",
+            message: `Thank you for your corporation! Your payment was successful.`,
+            link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
+            customer: customer._id,
+            user: purchase.user
+        });
+        const notificationToUserCreated = await notificationToUser.save();
+        await User.updateOne({_id: purchase.user}, {$push: {notifications: notificationToUserCreated._id}});
         const adminUser = await User.findOne({email:process.env.GMAIL_EMAIL ?? "penpaldev@gmail.com"});
         const newNotification = new Notification({
             read: false,
@@ -216,10 +228,9 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
             customer: customer._id,
             user: adminUser._id
-        })
+        });
         const createdNotification = await newNotification.save()
         await User.updateOne({_id: adminUser._id}, {$push: {notifications: createdNotification._id}})
-
         // if(user.referralBalance > 0) {
         //     user.referralBalance -= purchase.usedReferrals;
         //     await user.save();
