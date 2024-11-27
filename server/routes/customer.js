@@ -32,8 +32,8 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         const options = {
             "specialInstructions":true
         }
-        const newCust = await createCustomer(request.body, options, request.user);
         const user = await User.findOne({firebaseUid:request.user.uid}).exec();
+        const newCust = await createCustomer(request.body, options, request.user, user);
         const adminUser = await User.findOne({email:process.env.GMAIL_EMAIL ?? "penpaldev@gmail.com"})
         const newNotification = new Notification({
             read: false,

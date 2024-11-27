@@ -59,11 +59,13 @@ fastify.get(BASE_URL + "/admin/customer", async (request, reply) => {
           .skip(page * limit)
           .limit(limit)
           .lean()
+          .populate('user')
           .exec();
       } else {
         customers = await Customer.find(query)
           .sort({ _id: -1 }) // Sort by creation date in descending order
           .lean()
+          .populate('user')
           .exec();
       }
   
@@ -100,47 +102,10 @@ fastify.post(BASE_URL+"/admin/customer", async(request, reply)=>{
     try{
 
         const params = request.query;
-        const paidCreation = params["pay"] && params["pay"] === "false" ? false : true
-        const approved = params["approve"] && params["approve"] === "false" ? false : true
-        const newCustomer = await createCustomer(request.body, {
-            paidCreation,
-            approved,
-            // request.user
-        })
-        // console.log(newCustomer)
-        // if(paidCreation){
-        //     newCustomer["pendingPayments"]["creation"] = false
-        //     newCustomer["customerStatus"]["status"] = 'unapproved'
-        //     if(request.body.wordLimit && request.body.wordLimit >0){
-        //         newCustomer.customerStatus.wordLimitExtended = true
-        //         newCustomer.customerStatus.bioWordLimit = request.body.wordLimit * 100
-        //     }
-            
-        //     if(request.body.totalPaidPhotos && request.body.totalPaidPhotos >0){
-        //         newCustomer.customerStatus.photoLimit = request.body.totalPaidPhotos
-        //     }
-        // }
-
-        // if(approved ){
-        //     //do payments:
-        //     newCustomer["pendingPayments"]["creation"] = false
-        //     newCustomer["customerStatus"]["status"] = 'unapproved'
-        //     if(request.body.wordLimit && request.body.wordLimit >0){
-        //         newCustomer.customerStatus.wordLimitExtended = true
-        //         newCustomer.customerStatus.bioWordLimit = request.body.wordLimit * 100
-        //     }
-            
-        //     if(request.body.totalPaidPhotos && request.body.totalPaidPhotos >0){
-        //         newCustomer.customerStatus.photoLimit = request.body.totalPaidPhotos
-        //     }
-        //     //approve:
-        //     newCustomer["customerStatus"]["profileApproved"] = true
-        //     newCustomer["customerStatus"]["expiresAt"] = extendDateByMonth(new Date(), 12)
-        //     newCustomer["customerStatus"]["newlyListed"] = true
-        //     newCustomer["customerStatus"]["tag"] = "New Profile"
-        //     newCustomer["customerStatus"]["status"] = "active"
-        // }
-
+        const paidCreation = params["pay"] && params["pay"] === "false" ? false : true;
+        const approved = params["approve"] && params["approve"] === "false" ? false : true;
+        const user = await User.findOne({firebaseUid:request.user.uid}).exec();
+        const newCustomer = await createCustomer(request.body, { paidCreation, approved }, null, user);
 
         // const savedCustomer = await newCustomer.save()
         reply.send({

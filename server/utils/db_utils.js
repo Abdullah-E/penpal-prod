@@ -216,71 +216,20 @@ export const queryFromOptions = (options) => {
 }
 
 export const createCustomer = async (reqBody,  options={},fbUser=undefined, mongoUser=undefined) => {
-    /*
-    body:
-    {
-        basicInfo"{
-           "firstName":String, can be array
-            "lastName":String, can be array
-            "inmateNumber":String, can be array
-            "mailingAddress":String, can be array
-            "city":String, can be array
-            "state":String, can be array
-            "zipcode":String, can be array
-            "bio":"String, can be array
-            "gender":String, can be array
-            "orientation":String, can be array
-            "race":String, can be array
-            "education":String, can be array
-            "age":String, can be array
-            "dateOfBirth": Date, can be array
-            "height":String, can be array
-            "weight":String, can be array
-            "hairColor":String, can be array
-            "eyeColor":String, can be array
-            "religiousPref":String, can be array
-            "bodyType":String, can be array
-            "astrologicalSign":String, can be array
-            "relationshipStatus":String, can be array
-            "veteranStatus":String, can be array
-            "institutionalEmailProvider":String, can be array
-            "hometown":String, can be array
-            "spokenLanguages":Array
-            "highSchool":String, can be array
-            "highSchoolCity":String, can be array
-            "highSchoolState":String, can be array
-            "college":String, can be array
-            "collegeCity":String, can be array
-            "collegeState":String, can be array
-        }
-        PersonalityInfo:{
-            "hobbies":Array,
-            "sports":Array,
-            "likes":Array,
-            "personality":Array,
-            "bookGenres":Array,
-            "musicGenres":Array,
-            "movieGenres":Array
-        }
-        photos:{
-            imageUrl:String,
-            artworks:Array
-        }
-        specialInstructions:String
-        wordLimit:Number
-        totalPaidPhotos:Number
-    }
-    */
 
     //filling basicInfo:
     let customerObj = parseCustomerInfo(reqBody)    
     customerObj = {
+
         basicInfo:{...customerDefaultValues["basicInfo"]}, 
         personalityInfo:{...customerDefaultValues["personalityInfo"]},
         photos:{...customerDefaultValues["photos"]},
         customerStatus:{...customerDefaultValues["customerStatus"]},
         pendingPayments:{...customerDefaultValues["pendingPayments"]},
         ...customerObj,
+    }
+    if(mongoUser?._id) {
+        customerObj.user = mongoUser._id;
     }
     //special instructions:
     
