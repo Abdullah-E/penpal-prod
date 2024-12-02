@@ -48,17 +48,16 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
             read: false,
             readAt: null,
             type: "customerPurchase",
-            message: `${user?.firstName} created a new profile
-        
-        Customer Details:
-        - Inmate Name: 
-          ${newCust?.basicInfo.firstName} ${newCust?.basicInfo.lastName}
-        - Inmate Number: 
-          ${newCust?.basicInfo.inmateNumber}
-        - Date: 
-          ${new Date().toLocaleDateString()}
-        
-        We truly appreciate your business and look forward to serving you again.`,
+            message: `
+                <p>${user?.firstName} created a new profile</p>
+                <p><strong>Customer Details:</strong></p>
+                <ul>
+                    <li><strong>Inmate Name:</strong> ${newCust?.basicInfo.firstName} ${newCust?.basicInfo.lastName}</li>
+                    <li><strong>Inmate Number:</strong> ${newCust?.basicInfo.inmateNumber}</li>
+                    <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
+                </ul>
+                <p>We truly appreciate your business and look forward to serving you again.</p>
+            `,
             link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
             customer: newCust._id,
             user: adminUser._id
