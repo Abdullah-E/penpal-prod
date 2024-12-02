@@ -58,7 +58,7 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
                 We truly appreciate your business and look forward to serving you again.`,
             link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
             customer: newCust._id,
-            user: adminUser.user
+            user: adminUser._id
         });
         const createdNotification = await newNotification.save()
         await User.updateOne({_id: user._id}, {$push: {notifications: createdNotification._id}})
