@@ -35,15 +35,31 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         const user = await User.findOne({firebaseUid:request.user.uid}).exec();
         const newCust = await createCustomer(request.body, options, request.user, user);
         const adminUser = await User.findOne({email:process.env.GMAIL_EMAIL ?? "penpaldev@gmail.com"})
+        // const newNotification = new Notification({
+        //     read: false,
+        //     readAt: null,
+        //     type: "customerPurchase",
+        //     message: `${user?.firstName} created a new profile`,
+        //     link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
+        //     customer: newCust._id,
+        //     user: adminUser._id
+        // });
         const newNotification = new Notification({
             read: false,
             readAt: null,
             type: "customerPurchase",
-            message: `${user?.firstName} created a new profile`,
+            message: `${user?.firstName} created a new profile
+        
+                Customer Details:
+                - Inmate Name: ${newCust?.basicInfo.firstName} ${newCust?.basicInfo.lastName}
+                - Inmate Number: ${newCust?.basicInfo.inmateNumber}
+                - Date: ${new Date().toLocaleDateString()}
+
+                We truly appreciate your business and look forward to serving you again.`,
             link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
             customer: newCust._id,
-            user: adminUser._id
-        })
+            user: adminUser.user
+        });
         const createdNotification = await newNotification.save()
         await User.updateOne({_id: user._id}, {$push: {notifications: createdNotification._id}})
 
