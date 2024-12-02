@@ -50,16 +50,20 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
             type: "customerPurchase",
             message: `${user?.firstName} created a new profile
         
-                Customer Details:\n
-                - Inmate Name: ${newCust?.basicInfo.firstName} ${newCust?.basicInfo.lastName}\n
-                - Inmate Number: ${newCust?.basicInfo.inmateNumber}\n
-                - Date: ${new Date().toLocaleDateString()}\n
-
-                We truly appreciate your business and look forward to serving you again.`,
+        Customer Details:
+        - Inmate Name: 
+          ${newCust?.basicInfo.firstName} ${newCust?.basicInfo.lastName}
+        - Inmate Number: 
+          ${newCust?.basicInfo.inmateNumber}
+        - Date: 
+          ${new Date().toLocaleDateString()}
+        
+        We truly appreciate your business and look forward to serving you again.`,
             link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
             customer: newCust._id,
             user: adminUser._id
         });
+        
         const createdNotification = await newNotification.save()
         await User.updateOne({_id: user._id}, {$push: {notifications: createdNotification._id}})
 
