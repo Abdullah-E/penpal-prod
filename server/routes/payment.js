@@ -212,7 +212,16 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
             read: false,
             readAt: null,
             type: "customerPurchase",
-            message: `Thank you for your corporation! Your payment was successful.`,
+            message: `Thank you for your purchase! Your payment was successful. 
+        
+                Receipt Details:
+                - Inmate Name: ${customer?.basicInfo.firstName} ${customer?.basicInfo.lastName}
+                - Inmate Number: ${customer?.basicInfo.inmateNumber}
+                - Amount Paid: $${purchase.amount}
+                - Payment Date: ${new Date().toLocaleDateString()}
+                - Payment ID: ${purchase.paymentId}
+
+                We truly appreciate your business and look forward to serving you again.`,
             link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
             customer: customer._id,
             user: purchase.user
