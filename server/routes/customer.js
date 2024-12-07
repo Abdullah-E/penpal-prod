@@ -32,18 +32,37 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         const options = {
             "specialInstructions":true
         }
-        const newCust = await createCustomer(request.body, options, request.user);
         const user = await User.findOne({firebaseUid:request.user.uid}).exec();
+        const newCust = await createCustomer(request.body, options, request.user, user);
         const adminUser = await User.findOne({email:process.env.GMAIL_EMAIL ?? "penpaldev@gmail.com"})
+        // const newNotification = new Notification({
+        //     read: false,
+        //     readAt: null,
+        //     type: "customerPurchase",
+        //     message: `${user?.firstName} created a new profile`,
+        //     link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
+        //     customer: newCust._id,
+        //     user: adminUser._id
+        // });
         const newNotification = new Notification({
             read: false,
             readAt: null,
             type: "customerPurchase",
-            message: `${user?.firstName} created a new profile`,
+            message: `
+                <p>${user?.firstName} created a new profile</p>
+                <p><strong>Customer Details:</strong></p>
+                <ul>
+                    <li><strong>Inmate Name:</strong> ${newCust?.basicInfo.firstName} ${newCust?.basicInfo.lastName}</li>
+                    <li><strong>Inmate Number:</strong> ${newCust?.basicInfo.inmateNumber}</li>
+                    <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
+                </ul>
+                <p>We truly appreciate your business and look forward to serving you again.</p>
+            `,
             link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
             customer: newCust._id,
             user: adminUser._id
-        })
+        });
+        
         const createdNotification = await newNotification.save()
         await User.updateOne({_id: user._id}, {$push: {notifications: createdNotification._id}})
 

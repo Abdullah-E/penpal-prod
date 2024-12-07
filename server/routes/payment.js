@@ -208,14 +208,44 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         customer.markModified('pendingPayments')
         await customer.save();
 
+        // const notificationToUser = new Notification({
+        //     read: false,
+        //     readAt: null,
+        //     type: "customerPurchase",
+        //     message: `Thank you for your purchase! Your payment was successful. 
+        
+        //         Receipt Details:
+        //         - Inmate Name: ${customer?.basicInfo.firstName} ${customer?.basicInfo.lastName}
+        //         - Inmate Number: ${customer?.basicInfo.inmateNumber}
+        //         - Amount Paid: $${purchase.amount}
+        //         - Payment Date: ${new Date().toLocaleDateString()}
+        //         - Payment ID: ${purchase.paymentId}
+
+        //         We truly appreciate your business and look forward to serving you again.`,
+        //     link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
+        //     customer: customer._id,
+        //     user: purchase.user
+        // });
         const notificationToUser = new Notification({
             read: false,
             readAt: null,
             type: "customerPurchase",
-            message: `Thank you for your corporation! Your payment was successful.`,
+            message: `
+                <p>Thank you for your purchase! Your payment was successful. </p>
+                <p><strong>Receipt Details:</strong></p>
+                <ul>
+                    <li><strong>Inmate Name:</strong> ${customer?.basicInfo.firstName} ${customer?.basicInfo.lastName}</li>
+                    <li><strong>Inmate Number:</strong> ${customer?.basicInfo.inmateNumber}</li>
+                    <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
+                    <li><strong>Amount Paid:</strong> $${purchase.amount}</li>
+                    <li><strong>Payment Date:</strong> ${new Date().toLocaleDateString()}</li>
+                    <li><strong>Payment ID:</strong> ${purchase.paymentId}</li>
+                </ul>
+                <p>We truly appreciate your business and look forward to serving you again.</p>
+            `,
             link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
             customer: customer._id,
-            user: purchase.user
+            user: purchase._id
         });
         const notificationToUserCreated = await notificationToUser.save();
         await User.updateOne({_id: purchase.user}, {$push: {notifications: notificationToUserCreated._id}});
