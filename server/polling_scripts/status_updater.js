@@ -1,6 +1,7 @@
 import Customer from "../models/customer.js";
 import Notification from "../models/notification.js";
 import User from "../models/user.js";
+import { getProfileExpiration } from "../utils/templates.js";
 
 // import { frontendUrl } from "../index.js";
 
@@ -98,10 +99,12 @@ const updateExpires = async () => {
         const noti_ids = []
         for(const notification of notifications_list){
             // console.log("Creating notification", notification, user._id)
+            const link = `${process.env.FRONTEND_URL}/admin/inmate/${notification.customer}`;
             const newNotification = new Notification({
                 ...notification,
                 user: user._id,
-                link: `${process.env.FRONTEND_URL}/admin/inmate/${notification.customer}`
+                message: getProfileExpiration(notification.message, link, 'Profile Expiration'),
+                link: link
             })
             const createdNotification = await newNotification.save()
             

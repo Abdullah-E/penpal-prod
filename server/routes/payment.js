@@ -208,63 +208,46 @@ fastify.get(BASE_URL+'/payment/session-status', async (request, reply) => {
         customer.markModified('pendingPayments')
         await customer.save();
 
-        // const notificationToUser = new Notification({
-        //     read: false,
-        //     readAt: null,
-        //     type: "customerPurchase",
-        //     message: `Thank you for your purchase! Your payment was successful. 
-        
-        //         Receipt Details:
-        //         - Inmate Name: ${customer?.basicInfo.firstName} ${customer?.basicInfo.lastName}
-        //         - Inmate Number: ${customer?.basicInfo.inmateNumber}
-        //         - Amount Paid: $${purchase.amount}
-        //         - Payment Date: ${new Date().toLocaleDateString()}
-        //         - Payment ID: ${purchase.paymentId}
+        const message =  `
+        <p>Thank you for your purchase! Your payment was successful. </p>
+        <p><strong>Receipt Details:</strong></p>
+        <ul>
+            <li><strong>Inmate Name:</strong> ${customer?.basicInfo.firstName} ${customer?.basicInfo.lastName}</li>
+            <li><strong>Inmate Number:</strong> ${customer?.basicInfo.inmateNumber}</li>
+            <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
+            <li><strong>Amount Paid:</strong> $${purchase.amount}</li>
+            <li><strong>Payment Date:</strong> ${new Date().toLocaleDateString()}</li>
+            <li><strong>Payment ID:</strong> ${purchase.paymentId}</li>
+        </ul>
+        <p>We truly appreciate your business and look forward to serving you again.</p>
+    `;
+        const link = `${process.env.FRONTEND_URL}/inmate/${customer._id}`;
 
-        //         We truly appreciate your business and look forward to serving you again.`,
-        //     link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
-        //     customer: customer._id,
-        //     user: purchase.user
-        // });
         const notificationToUser = new Notification({
             read: false,
             readAt: null,
             type: "customerPurchase",
-            message: `
-                <p>Thank you for your purchase! Your payment was successful. </p>
-                <p><strong>Receipt Details:</strong></p>
-                <ul>
-                    <li><strong>Inmate Name:</strong> ${customer?.basicInfo.firstName} ${customer?.basicInfo.lastName}</li>
-                    <li><strong>Inmate Number:</strong> ${customer?.basicInfo.inmateNumber}</li>
-                    <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
-                    <li><strong>Amount Paid:</strong> $${purchase.amount}</li>
-                    <li><strong>Payment Date:</strong> ${new Date().toLocaleDateString()}</li>
-                    <li><strong>Payment ID:</strong> ${purchase.paymentId}</li>
-                </ul>
-                <p>We truly appreciate your business and look forward to serving you again.</p>
-            `,
-            link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
+            message: getProfileExpiration(message, link, 'Payment Purchase'),
+            link: link,
             customer: customer._id,
             user: purchase._id
         });
         const notificationToUserCreated = await notificationToUser.save();
         await User.updateOne({_id: purchase.user}, {$push: {notifications: notificationToUserCreated._id}});
         const adminUser = await User.findOne({email:process.env.GMAIL_EMAIL ?? "penpaldev@gmail.com"});
+        const message1 = `${user?.firstName} make a transaction on customer profile`;
+        const url = `${process.env.FRONTEND_URL}/inmate/${customer._id}`;
         const newNotification = new Notification({
             read: false,
             readAt: null,
             type: "customerPurchase",
-            message: `${user?.firstName} make a transaction on customer profile`,
-            link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
+            message: getProfileExpiration(message1, url, 'Transaction Confirmation'),
+            link: url,
             customer: customer._id,
             user: adminUser._id
         });
         const createdNotification = await newNotification.save()
         await User.updateOne({_id: adminUser._id}, {$push: {notifications: createdNotification._id}})
-        // if(user.referralBalance > 0) {
-        //     user.referralBalance -= purchase.usedReferrals;
-        //     await user.save();
-        // }
         return reply.send({
             data:{
                 status: session.status

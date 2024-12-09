@@ -10,6 +10,7 @@ import Favorite from "../models/favorite.js";
 import {verifyToken } from "../utils/firebase_utils.js";
 import {createCustomer, flagFavorites, flagRatings, flagCreated, flagUpdated, queryFromOptions, flagCreatedBy, paidByCreation} from "../utils/db_utils.js";
 import { parseCustomerInfo } from "../utils/misc_utils.js";
+import { getProfileExpiration } from "../utils/templates.js";
 
 fastify.addHook('onRequest', async(request, reply)=>{
     const isExcludedRoute = 
@@ -35,30 +36,26 @@ fastify.post(BASE_URL + '/customer', async(request, reply)=>{
         const user = await User.findOne({firebaseUid:request.user.uid}).exec();
         const newCust = await createCustomer(request.body, options, request.user, user);
         const adminUser = await User.findOne({email:process.env.GMAIL_EMAIL ?? "penpaldev@gmail.com"})
-        // const newNotification = new Notification({
-        //     read: false,
-        //     readAt: null,
-        //     type: "customerPurchase",
-        //     message: `${user?.firstName} created a new profile`,
-        //     link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
-        //     customer: newCust._id,
-        //     user: adminUser._id
-        // });
+
+        const message = `
+        <p>${user?.firstName} created a new profile</p>
+        <p><strong>Customer Details:</strong></p>
+        <ul>
+            <li><strong>Inmate Name:</strong> ${newCust?.basicInfo.firstName} ${newCust?.basicInfo.lastName}</li>
+            <li><strong>Inmate Number:</strong> ${newCust?.basicInfo.inmateNumber}</li>
+            <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
+        </ul>
+        <p>We truly appreciate your business and look forward to serving you again.</p>
+    `;
+
+    const link = `${process.env.FRONTEND_URL}/inmate/${newCust._id}`;
+
         const newNotification = new Notification({
             read: false,
             readAt: null,
             type: "customerPurchase",
-            message: `
-                <p>${user?.firstName} created a new profile</p>
-                <p><strong>Customer Details:</strong></p>
-                <ul>
-                    <li><strong>Inmate Name:</strong> ${newCust?.basicInfo.firstName} ${newCust?.basicInfo.lastName}</li>
-                    <li><strong>Inmate Number:</strong> ${newCust?.basicInfo.inmateNumber}</li>
-                    <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
-                </ul>
-                <p>We truly appreciate your business and look forward to serving you again.</p>
-            `,
-            link: `${process.env.FRONTEND_URL}/inmate/${newCust._id}`,
+            message: getProfileExpiration(message, link, 'Profile Creation'),
+            link: link,
             customer: newCust._id,
             user: adminUser._id
         });

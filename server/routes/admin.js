@@ -9,6 +9,7 @@ import { getUserFromToken } from "../utils/firebase_utils.js"
 import { applyCustomerUpdate, createCustomer} from "../utils/db_utils.js"
 import { extendDateByMonth, isEmpty } from "../utils/misc_utils.js";
 import Purchase from "../models/purchase.js";
+import { getProfileExpiration } from "../utils/templates.js";
 
 // import { frontendUrl } from "../index.js";
 
@@ -347,12 +348,14 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
             await update.save();
 
             console.log('Update Approved');
+            const link = `${process.env.FRONTEND_URL}/inmate/${customer._id}`;
+            const message = `${update?.customer.basicInfo.firstName} from your update list has been updated and approved by admin`
             const newNotification = new Notification({
                 read: false,
                 readAt: null,
                 type: "customerUpdate",
-                message: `${update?.customer.basicInfo.firstName} from your update list has been updated and approved by admin`,
-                link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
+                message: getProfileExpiration(message, link, 'Profile Approved'),
+                link: link,
                 customer: customer._id,
                 user: update.user
             })
@@ -391,12 +394,14 @@ fastify.put(BASE_URL+"/admin/approve-update", async (request, reply) => {
                 continue
             }
             for(const user of customerFavoriteUsers){
+                const link = `${process.env.FRONTEND_URL}/inmate/${customer._id}`;
+                const message = `${customer.basicInfo.firstName} from your favorite list has been updated!`;
                 const newNotification = new Notification({
                     read: false,
                     readAt: null,
                     type: "customerUpdate",
-                    message: `${customer.basicInfo.firstName} from your favorite list has been updated!`,
-                    link: `${process.env.FRONTEND_URL}/inmate/${customer._id}`,
+                    message: getProfileExpiration(message, link, 'Profile Updated'),
+                    link: link,
                     customer: customer._id,
                     user: user._id
                 })
