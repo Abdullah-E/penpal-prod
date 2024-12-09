@@ -77,7 +77,7 @@ export const getProfileExpiration = (message,link, title) => `
     <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0A344D; padding: 20px;">
         <tr>
             <td align="center">
-                <img src="./assets/penpal-logo.png" alt="User Logo" style="max-width: 200px; max-height: 70px;">
+                <img src="https://firebasestorage.googleapis.com/v0/b/awayout-55fe2.appspot.com/o/images%2Fpenpap-logo.png?alt=media&token=f69363d5-63ee-4c7a-a59e-fb1d88a4d60f" alt="User Logo" style="max-width: 200px; max-height: 70px;">
             </td>
         </tr>
     </table>
