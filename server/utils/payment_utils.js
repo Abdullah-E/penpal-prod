@@ -6,7 +6,7 @@ const paypalClientId = process.env.PAYPAL_CLIENT_ID
 const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET
 const port = process.env.PORT || 8000
 
-const paypalBase = 'https://api-m.sandbox.paypal.com';
+const paypalBase = 'https://api-m.paypal.com';
 
 export const paypalAccessToken = async()=>{
     const authHeader = Buffer.from(
