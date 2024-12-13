@@ -376,11 +376,6 @@ fastify.get(BASE_URL + "/user/matches", async (request, reply) => {
     limit = parseInt(limit) || 10
     const user = await User.findOne({ firebaseUid: request.user.uid }).exec()
     if (user.profileComplete == false) {
-      // let matches = await Customer.find({
-      //   "customerStatus.profileApproved":true,
-      //   "pendingPayments.creation":false,
-      //   "customerStatus.status":"active"
-      // }).sort({"rating":-1}).skip(page*limit).limit(parseInt(limit)).lean().exec()
       let matches = await Customer.aggregate([
         {$match:{
           "customerStatus.profileApproved":true,
